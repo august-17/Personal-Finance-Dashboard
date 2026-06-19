@@ -14,19 +14,9 @@ def handle_category_change(event):
 
     if category_combobox.get() == "Other":
 
-        custom_category_label.grid(
-            row=4,
-            column=0,
-            padx=5,
-            pady=5
-        )
+        custom_category_label.grid(row=4, column=0, padx=5, pady=5)
 
-        custom_category_entry.grid(
-            row=4,
-            column=1,
-            padx=5,
-            pady=5
-        )
+        custom_category_entry.grid(row=4, column=1, padx=5, pady=5)
 
     else:
 
@@ -98,5 +88,25 @@ category_combobox.bind(
     "<<ComboboxSelected>>",
     handle_category_change
 )
+
+# Transaction Button
+add_button = tk.Button(input_frame, text="Add Transaction")
+
+add_button.grid(row=4, column=0, columnspan=2, pady=10)
+
+# Transaction Table
+columns = ("Date", "Type", "Category", "Amount", "Description")
+
+tree = ttk.Treeview(
+    root,
+    columns=columns,
+    show="headings"
+)
+
+for column in columns:
+    tree.heading(column, text=column)
+    tree.column(column, width=150)
+
+tree.pack(fill="both", expand=True, padx=20, pady=20)
 
 root.mainloop()
