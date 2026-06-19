@@ -25,6 +25,114 @@ def handle_category_change(event):
 
 
 
+def create_csv_file():
+
+    if not os.path.exists(CSV_FILE):
+
+        with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
+
+            writer = csv.writer(file)
+
+            writer.writerow([
+                "Date",
+                "Type",
+                "Category",
+                "Amount",
+                "Description"
+            ])
+
+
+
+def add_transaction():
+
+    transaction_type = type_combobox.get()
+
+    category = category_combobox.get()
+
+    if category == "Other":
+
+        category = custom_category_entry.get().strip()
+
+        if not category:
+
+            messagebox.showerror(
+                "Error",
+                "Please enter a custom category."
+            )
+            return
+
+    amount = amount_entry.get().strip()
+
+    description = description_entry.get().strip()
+
+    if not amount:
+
+        messagebox.showerror(
+            "Error",
+            "Please enter an amount."
+        )
+        return
+
+    try:
+        amount = float(amount)
+
+    except ValueError:
+
+        messagebox.showerror(
+            "Error",
+            "Amount must be a number."
+        )
+        return
+
+    if amount <= 0:
+
+        messagebox.showerror(
+            "Error",
+            "Amount must be greater than zero."
+        )
+        return
+
+    date = datetime.now().strftime("%Y-%m-%d")
+
+    with open(
+        CSV_FILE,
+        "a",
+        newline="",
+        encoding="utf-8"
+    ) as file:
+
+        writer = csv.writer(file)
+
+        writer.writerow([
+            date,
+            transaction_type,
+            category,
+            amount,
+            description
+        ])
+
+    tree.insert(
+        "",
+        "end",
+        values=(
+            date,
+            transaction_type,
+            category,
+            amount,
+            description
+        )
+    )
+
+    amount_entry.delete(0, tk.END)
+
+    description_entry.delete(0, tk.END)
+
+    custom_category_entry.delete(0, tk.END)
+
+
+
+create_csv_file()
+
 root = tk.Tk()
 root.title("Personal Finance Dashboard")
 root.geometry("900x600")
@@ -90,7 +198,11 @@ category_combobox.bind(
 )
 
 # Transaction Button
-add_button = tk.Button(input_frame, text="Add Transaction")
+add_button = tk.Button(
+    input_frame,
+    text="Add Transaction",
+    command=add_transaction
+)
 
 add_button.grid(row=4, column=0, columnspan=2, pady=10)
 
