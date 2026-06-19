@@ -34,3 +34,4 @@ The application allows users to record income and expenses, categorize transacti
 
 B.Tech Computer Science & Engineering  
 Manipal Institute of Technology, Manipal
+
