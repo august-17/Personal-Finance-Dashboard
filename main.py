@@ -670,12 +670,7 @@ edit_button = tk.Button(
     command=edit_transaction
 )
 
-edit_button.grid(
-    row=9,
-    column=0,
-    columnspan=2,
-    pady=5
-)
+edit_button.grid(row=9, column=0, columnspan=2, pady=5)
 
 # Save Changes Button
 save_button = tk.Button(
@@ -684,12 +679,7 @@ save_button = tk.Button(
     command=save_changes
 )
 
-save_button.grid(
-    row=10,
-    column=0,
-    columnspan=2,
-    pady=5
-)
+save_button.grid(row=10, column=0, columnspan=2, pady=5)
 
 # Search Frame
 search_frame = tk.Frame(root)
