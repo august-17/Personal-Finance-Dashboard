@@ -249,6 +249,65 @@ def show_expense_breakdown():
 
 
 
+def show_monthly_trend():
+
+    monthly_expenses = {}
+
+    with open(
+        CSV_FILE,
+        "r",
+        newline="",
+        encoding="utf-8"
+    ) as file:
+
+        reader = csv.DictReader(file)
+
+        for row in reader:
+
+            if row["Type"] == "Expense":
+
+                month = row["Date"][:7]      # YYYY-MM
+
+                amount = float(row["Amount"])
+
+                if month not in monthly_expenses:
+                    monthly_expenses[month] = 0
+
+                monthly_expenses[month] += amount
+
+    if not monthly_expenses:
+
+        messagebox.showinfo(
+            "No Data",
+            "No expense data available."
+        )
+        return
+
+    months = sorted(monthly_expenses.keys())
+
+    expenses = [
+        monthly_expenses[month]
+        for month in months
+    ]
+
+    plt.figure(figsize=(8, 5))
+
+    plt.plot(
+        months,
+        expenses,
+        marker="o"
+    )
+
+    plt.title("Monthly Expense Trend")
+    plt.xlabel("Month")
+    plt.ylabel("Amount (₹)")
+
+    plt.grid(True)
+
+    plt.show()
+
+
+
 create_csv_file()
 
 root = tk.Tk()
@@ -379,6 +438,20 @@ chart_button = tk.Button(
 
 chart_button.grid(
     row=6,
+    column=0,
+    columnspan=2,
+    pady=5
+)
+
+# Monthly Trend Button
+trend_button = tk.Button(
+    input_frame,
+    text="Show Monthly Trend",
+    command=show_monthly_trend
+)
+
+trend_button.grid(
+    row=7,
     column=0,
     columnspan=2,
     pady=5
