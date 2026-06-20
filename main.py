@@ -128,11 +128,13 @@ def add_transaction():
     description_entry.delete(0, tk.END)
 
     custom_category_entry.delete(0, tk.END)
+
+    update_summary()
+
     category_combobox.current(0)
 
     custom_category_label.grid_remove()
     custom_category_entry.grid_remove()
-
 
 
 
@@ -159,6 +161,46 @@ def load_transactions():
 
 
 
+def update_summary():
+
+    total_income = 0
+    total_expenses = 0
+
+    with open(
+        CSV_FILE,
+        "r",
+        newline="",
+        encoding="utf-8"
+    ) as file:
+
+        reader = csv.DictReader(file)
+
+        for row in reader:
+
+            amount = float(row["Amount"])
+
+            if row["Type"] == "Income":
+                total_income += amount
+
+            else:
+                total_expenses += amount
+
+    balance = total_income - total_expenses
+
+    income_label.config(
+        text=f"Total Income: ₹{total_income:.2f}"
+    )
+
+    expense_label.config(
+        text=f"Total Expenses: ₹{total_expenses:.2f}"
+    )
+
+    balance_label.config(
+        text=f"Current Balance: ₹{balance:.2f}"
+    )
+
+
+
 create_csv_file()
 
 root = tk.Tk()
@@ -173,6 +215,47 @@ title_label = tk.Label(
     font=("Arial", 18, "bold")
 )
 title_label.pack(pady=10)
+
+#Summary Frame
+summary_frame = tk.Frame(root)
+
+summary_frame.pack(pady=10)
+
+income_label = tk.Label(
+    summary_frame,
+    text="Total Income: ₹0.00",
+    font=("Arial", 12, "bold")
+)
+
+income_label.grid(
+    row=0,
+    column=0,
+    padx=20
+)
+
+expense_label = tk.Label(
+    summary_frame,
+    text="Total Expenses: ₹0.00",
+    font=("Arial", 12, "bold")
+)
+
+expense_label.grid(
+    row=0,
+    column=1,
+    padx=20
+)
+
+balance_label = tk.Label(
+    summary_frame,
+    text="Current Balance: ₹0.00",
+    font=("Arial", 12, "bold")
+)
+
+balance_label.grid(
+    row=0,
+    column=2,
+    padx=20
+)
 
 # Input Frame
 input_frame = tk.Frame(root)
@@ -255,5 +338,7 @@ for column in columns:
 tree.pack(fill="both", expand=True, padx=20, pady=20)
 
 load_transactions()
+
+update_summary()
 
 root.mainloop()
