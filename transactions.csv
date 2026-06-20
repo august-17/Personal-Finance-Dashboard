@@ -4,4 +4,4 @@ ID,Date,Type,Category,Amount,Description
 3,2026-06-20,Expense,Bills,800.0,Electricity
 4,2026-06-20,Income,Education,50000.0,Scholarship
 5,2026-06-20,Income,Bank,4000.0,Interest
-6,2026-06-20,Income,Junk food,200.0,
+8,2026-06-20,Expense,Food,200.0,Sandwich

@@ -9,6 +9,8 @@ CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Education", "Healthcare", 
 
 CSV_FILE = "transactions.csv"
 
+editing_transaction_id = None
+
 
 
 def handle_category_change(event):
@@ -388,6 +390,143 @@ def delete_transaction():
 
 
 
+def edit_transaction():
+
+    global editing_transaction_id
+
+    selected_item = tree.selection()
+
+    if not selected_item:
+
+        messagebox.showwarning(
+            "No Selection",
+            "Please select a transaction to edit."
+        )
+        return
+
+    values = tree.item(selected_item[0], "values")
+
+    editing_transaction_id = values[0]
+
+    type_combobox.set(values[2])
+
+    category = values[3]
+
+    if category in CATEGORIES:
+
+        category_combobox.set(category)
+
+        custom_category_label.grid_remove()
+        custom_category_entry.grid_remove()
+
+    else:
+
+        category_combobox.set("Other")
+
+        custom_category_label.grid(row=4, column=0, padx=5, pady=5)
+
+        custom_category_entry.grid(row=4, column=1, padx=5,pady=5)
+
+        custom_category_entry.delete(0, tk.END)
+        custom_category_entry.insert(0, category)
+
+    amount_entry.delete(0, tk.END)
+    amount_entry.insert(0, values[4])
+
+    description_entry.delete(0, tk.END)
+    description_entry.insert(0, values[5])
+
+
+
+def save_changes():
+
+    global editing_transaction_id
+
+    if editing_transaction_id is None:
+
+        messagebox.showwarning(
+            "No Edit",
+            "Select a transaction to edit first."
+        )
+        return
+
+    transaction_type = type_combobox.get()
+
+    category = category_combobox.get()
+
+    if category == "Other":
+
+        category = custom_category_entry.get().strip()
+
+        if not category:
+
+            messagebox.showerror(
+                "Error",
+                "Please enter a custom category."
+            )
+            return
+
+    amount = amount_entry.get().strip()
+
+    description = description_entry.get().strip()
+
+    try:
+        amount = float(amount)
+
+    except ValueError:
+
+        messagebox.showerror(
+            "Error",
+            "Amount must be a number."
+        )
+        return
+
+    rows = []
+
+    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+
+        reader = csv.reader(file)
+
+        header = next(reader)
+
+        for row in reader:
+
+            if row[0] == str(editing_transaction_id):
+
+                row = [row[0], row[1], transaction_type, category, amount, description]
+
+            rows.append(row)
+
+    with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
+
+        writer = csv.writer(file)
+
+        writer.writerow(header)
+
+        writer.writerows(rows)
+
+    editing_transaction_id = None
+
+    apply_filter()
+
+    update_summary()
+
+    amount_entry.delete(0, tk.END)
+    description_entry.delete(0, tk.END)
+    custom_category_entry.delete(0, tk.END)
+
+    category_combobox.current(0)
+
+    custom_category_label.grid_remove()
+    custom_category_entry.grid_remove()
+
+    messagebox.showinfo(
+        "Success",
+        "Transaction updated successfully."
+    )
+
+
+
 create_csv_file()
 
 root = tk.Tk()
@@ -523,6 +662,34 @@ delete_button = tk.Button(
 )
 
 delete_button.grid(row=8, column=0, columnspan=2, pady=5)
+
+# Edit Transaction Button
+edit_button = tk.Button(
+    input_frame,
+    text="Edit Selected Transaction",
+    command=edit_transaction
+)
+
+edit_button.grid(
+    row=9,
+    column=0,
+    columnspan=2,
+    pady=5
+)
+
+# Save Changes Button
+save_button = tk.Button(
+    input_frame,
+    text="Save Changes",
+    command=save_changes
+)
+
+save_button.grid(
+    row=10,
+    column=0,
+    columnspan=2,
+    pady=5
+)
 
 # Search Frame
 search_frame = tk.Frame(root)
