@@ -34,13 +34,7 @@ def create_csv_file():
 
             writer = csv.writer(file)
 
-            writer.writerow([
-                "Date",
-                "Type",
-                "Category",
-                "Amount",
-                "Description"
-            ])
+            writer.writerow(["Date", "Type", "Category", "Amount", "Description"])
 
 
 
@@ -95,33 +89,16 @@ def add_transaction():
 
     date = datetime.now().strftime("%Y-%m-%d")
 
-    with open(
-        CSV_FILE,
-        "a",
-        newline="",
-        encoding="utf-8"
-    ) as file:
+    with open(CSV_FILE, "a", newline="", encoding="utf-8") as file:
 
         writer = csv.writer(file)
 
-        writer.writerow([
-            date,
-            transaction_type,
-            category,
-            amount,
-            description
-        ])
+        writer.writerow([date, transaction_type, category, amount, description])
 
     tree.insert(
         "",
         "end",
-        values=(
-            date,
-            transaction_type,
-            category,
-            amount,
-            description
-        )
+        values=(date, transaction_type, category, amount, description)
     )
 
     amount_entry.delete(0, tk.END)
@@ -132,6 +109,8 @@ def add_transaction():
 
     update_summary()
 
+    apply_filter()
+
     category_combobox.current(0)
 
     custom_category_label.grid_remove()
@@ -141,12 +120,7 @@ def add_transaction():
 
 def load_transactions():
 
-    with open(
-        CSV_FILE,
-        "r",
-        newline="",
-        encoding="utf-8"
-    ) as file:
+    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
 
         reader = csv.reader(file)
 
@@ -154,11 +128,7 @@ def load_transactions():
 
         for row in reader:
 
-            tree.insert(
-                "",
-                "end",
-                values=row
-            )
+            tree.insert("", "end", values=row)
 
 
 
@@ -167,12 +137,7 @@ def update_summary():
     total_income = 0
     total_expenses = 0
 
-    with open(
-        CSV_FILE,
-        "r",
-        newline="",
-        encoding="utf-8"
-    ) as file:
+    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
 
         reader = csv.DictReader(file)
 
@@ -206,12 +171,7 @@ def show_expense_breakdown():
 
     category_totals = {}
 
-    with open(
-        CSV_FILE,
-        "r",
-        newline="",
-        encoding="utf-8"
-    ) as file:
+    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
 
         reader = csv.DictReader(file)
 
@@ -253,12 +213,7 @@ def show_monthly_trend():
 
     monthly_expenses = {}
 
-    with open(
-        CSV_FILE,
-        "r",
-        newline="",
-        encoding="utf-8"
-    ) as file:
+    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
 
         reader = csv.DictReader(file)
 
@@ -308,6 +263,51 @@ def show_monthly_trend():
 
 
 
+def apply_filter():
+
+    for item in tree.get_children():
+        tree.delete(item)
+
+    search_text = search_entry.get().strip().lower()
+
+    selected_type = filter_combobox.get()
+
+    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+
+        reader = csv.DictReader(file)
+
+        for row in reader:
+
+            matches_search = (
+                search_text in row["Category"].lower()
+                or search_text in row["Description"].lower()
+            )
+
+            matches_type = (
+                selected_type == "All"
+                or row["Type"] == selected_type
+            )
+
+            if matches_search and matches_type:
+
+                tree.insert(
+                    "",
+                    "end",
+                    values=(row["Date"], row["Type"], row["Category"], row["Amount"], row["Description"])
+                )
+
+
+
+def reset_filter():
+
+    search_entry.delete(0, tk.END)
+
+    filter_combobox.current(0)
+
+    apply_filter()
+
+
+
 create_csv_file()
 
 root = tk.Tk()
@@ -334,11 +334,7 @@ income_label = tk.Label(
     font=("Arial", 12, "bold")
 )
 
-income_label.grid(
-    row=0,
-    column=0,
-    padx=20
-)
+income_label.grid(row=0, column=0, padx=20)
 
 expense_label = tk.Label(
     summary_frame,
@@ -346,11 +342,7 @@ expense_label = tk.Label(
     font=("Arial", 12, "bold")
 )
 
-expense_label.grid(
-    row=0,
-    column=1,
-    padx=20
-)
+expense_label.grid(row=0, column=1, padx=20)
 
 balance_label = tk.Label(
     summary_frame,
@@ -358,11 +350,7 @@ balance_label = tk.Label(
     font=("Arial", 12, "bold")
 )
 
-balance_label.grid(
-    row=0,
-    column=2,
-    padx=20
-)
+balance_label.grid(row=0, column=2, padx=20)
 
 # Input Frame
 input_frame = tk.Frame(root)
@@ -436,12 +424,7 @@ chart_button = tk.Button(
     command=show_expense_breakdown
 )
 
-chart_button.grid(
-    row=6,
-    column=0,
-    columnspan=2,
-    pady=5
-)
+chart_button.grid(row=6, column=0, columnspan=2, pady=5)
 
 # Monthly Trend Button
 trend_button = tk.Button(
@@ -450,12 +433,48 @@ trend_button = tk.Button(
     command=show_monthly_trend
 )
 
-trend_button.grid(
-    row=7,
-    column=0,
-    columnspan=2,
-    pady=5
+trend_button.grid(row=7, column=0, columnspan=2, pady=5)
+
+# Search Frame
+search_frame = tk.Frame(root)
+search_frame.pack(pady=10)
+
+tk.Label(search_frame, text="Search").grid(row=0, column=0, padx=5)
+
+search_entry = tk.Entry(search_frame, width=30)
+
+search_entry.grid(row=0, column=1, padx=5)
+
+# Filter Label
+tk.Label(search_frame, text="Type").grid(row=0, column=2, padx=5)
+
+filter_combobox = ttk.Combobox(
+    search_frame,
+    values=["All", "Income", "Expense"],
+    state="readonly",
+    width=15
 )
+
+filter_combobox.grid(row=0, column=3,padx=5)
+filter_combobox.current(0)
+
+# Filter Button
+filter_button = tk.Button(
+    search_frame,
+    text="Apply Filter",
+    command=apply_filter
+)
+
+filter_button.grid(row=0, column=4, padx=10)
+
+# Reset Filter Button
+reset_button = tk.Button(
+    search_frame,
+    text="Reset Filter",
+    command=reset_filter
+)
+
+reset_button.grid(row=0, column=5, padx=5)
 
 # Transaction Table
 columns = ("Date", "Type", "Category", "Amount", "Description")
