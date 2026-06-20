@@ -128,6 +128,34 @@ def add_transaction():
     description_entry.delete(0, tk.END)
 
     custom_category_entry.delete(0, tk.END)
+    category_combobox.current(0)
+
+    custom_category_label.grid_remove()
+    custom_category_entry.grid_remove()
+
+
+
+
+def load_transactions():
+
+    with open(
+        CSV_FILE,
+        "r",
+        newline="",
+        encoding="utf-8"
+    ) as file:
+
+        reader = csv.reader(file)
+
+        next(reader, None)
+
+        for row in reader:
+
+            tree.insert(
+                "",
+                "end",
+                values=row
+            )
 
 
 
@@ -176,8 +204,13 @@ category_combobox.current(0)
 
 #Custom category
 custom_category_label = tk.Label(input_frame, text="Custom Category")
-
 custom_category_entry = tk.Entry(input_frame, width=23)
+
+custom_category_label.grid(row=4, column=0, padx=5, pady=5)
+custom_category_entry.grid(row=4, column=1, padx=5, pady=5)
+
+custom_category_label.grid_remove()
+custom_category_entry.grid_remove()
 
 # Amount
 tk.Label(input_frame, text="Amount").grid(row=2, column=0, padx=5, pady=5)
@@ -204,7 +237,7 @@ add_button = tk.Button(
     command=add_transaction
 )
 
-add_button.grid(row=4, column=0, columnspan=2, pady=10)
+add_button.grid(row=5, column=0, columnspan=2, pady=10)
 
 # Transaction Table
 columns = ("Date", "Type", "Category", "Amount", "Description")
@@ -220,5 +253,7 @@ for column in columns:
     tree.column(column, width=150)
 
 tree.pack(fill="both", expand=True, padx=20, pady=20)
+
+load_transactions()
 
 root.mainloop()
