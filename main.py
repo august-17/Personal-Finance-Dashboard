@@ -34,7 +34,26 @@ def create_csv_file():
 
             writer = csv.writer(file)
 
-            writer.writerow(["Date", "Type", "Category", "Amount", "Description"])
+            writer.writerow(["ID", "Date", "Type", "Category", "Amount", "Description"])
+
+
+
+def get_next_id():
+
+    highest_id = 0
+
+    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+
+        reader = csv.DictReader(file)
+
+        for row in reader:
+
+            current_id = int(row["ID"])
+
+            if current_id > highest_id:
+                highest_id = current_id
+
+    return highest_id + 1
 
 
 
@@ -86,6 +105,8 @@ def add_transaction():
             "Amount must be greater than zero."
         )
         return
+    
+    transaction_id = get_next_id()
 
     date = datetime.now().strftime("%Y-%m-%d")
 
@@ -93,12 +114,12 @@ def add_transaction():
 
         writer = csv.writer(file)
 
-        writer.writerow([date, transaction_type, category, amount, description])
+        writer.writerow([transaction_id, date, transaction_type, category, amount, description])
 
     tree.insert(
         "",
         "end",
-        values=(date, transaction_type, category, amount, description)
+        values=(transaction_id, date, transaction_type, category, amount, description)
     )
 
     amount_entry.delete(0, tk.END)
@@ -293,7 +314,7 @@ def apply_filter():
                 tree.insert(
                     "",
                     "end",
-                    values=(row["Date"], row["Type"], row["Category"], row["Amount"], row["Description"])
+                    values=(row["ID"],row["Date"], row["Type"], row["Category"], row["Amount"], row["Description"])
                 )
 
 
@@ -330,6 +351,8 @@ def delete_transaction():
 
     selected_values = tree.item(selected_item[0], "values")
 
+    transaction_id = selected_values[0]
+
     rows = []
 
     deleted = False
@@ -344,7 +367,7 @@ def delete_transaction():
 
             if (
                 not deleted
-                and tuple(row) == tuple(map(str, selected_values))
+                and row[0] == transaction_id
             ):
                 deleted = True
                 continue
@@ -543,7 +566,7 @@ reset_button = tk.Button(
 reset_button.grid(row=0, column=5, padx=5)
 
 # Transaction Table
-columns = ("Date", "Type", "Category", "Amount", "Description")
+columns = ("ID", "Date", "Type", "Category", "Amount", "Description")
 
 tree = ttk.Treeview(
     root,
@@ -553,7 +576,14 @@ tree = ttk.Treeview(
 
 for column in columns:
     tree.heading(column, text=column)
-    tree.column(column, width=150)
+
+    if column == "ID":
+
+        tree.column(column, width=0, stretch=False)
+
+    else:
+
+        tree.column(column, width=150)
 
 tree.pack(fill="both", expand=True, padx=20, pady=20)
 

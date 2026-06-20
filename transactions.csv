@@ -1,7 +1,7 @@
-Date,Type,Category,Amount,Description
-2026-06-19,Expense,Food,150.0,Lunch
-2026-06-20,Expense,Shopping,2500.0,Shoes
-2026-06-20,Income,Scholarship,50000.0,Reliance Scholarship
-2026-06-20,Expense,Travel,5000.0,Coorg
-2026-06-20,Expense,Bills,800.0,Electricity
-2026-06-20,Income,Bank,7000.0,Interest
+ID,Date,Type,Category,Amount,Description
+1,2026-06-20,Expense,Food,500.0,Lunch
+2,2026-06-20,Expense,Travel,6000.0,Coorg
+3,2026-06-20,Expense,Bills,800.0,Electricity
+4,2026-06-20,Income,Education,50000.0,Scholarship
+5,2026-06-20,Income,Bank,4000.0,Interest
+6,2026-06-20,Income,Junk food,200.0,
