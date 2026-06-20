@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from datetime import datetime
 import csv
 import os
+import matplotlib.pyplot as plt
 
 CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Education", "Healthcare", "Entertainment", "Other"]
 
@@ -201,6 +202,53 @@ def update_summary():
 
 
 
+def show_expense_breakdown():
+
+    category_totals = {}
+
+    with open(
+        CSV_FILE,
+        "r",
+        newline="",
+        encoding="utf-8"
+    ) as file:
+
+        reader = csv.DictReader(file)
+
+        for row in reader:
+
+            if row["Type"] == "Expense":
+
+                category = row["Category"]
+                amount = float(row["Amount"])
+
+                if category not in category_totals:
+                    category_totals[category] = 0
+
+                category_totals[category] += amount
+
+    if not category_totals:
+
+        messagebox.showinfo(
+            "No Data",
+            "No expense data available."
+        )
+        return
+
+    plt.figure(figsize=(7, 7))
+
+    plt.pie(
+        category_totals.values(),
+        labels=category_totals.keys(),
+        autopct="%1.1f%%"
+    )
+
+    plt.title("Expense Breakdown by Category")
+
+    plt.show()
+
+
+
 create_csv_file()
 
 root = tk.Tk()
@@ -321,6 +369,20 @@ add_button = tk.Button(
 )
 
 add_button.grid(row=5, column=0, columnspan=2, pady=10)
+
+# Expense Breakdown Button
+chart_button = tk.Button(
+    input_frame,
+    text="Show Expense Breakdown",
+    command=show_expense_breakdown
+)
+
+chart_button.grid(
+    row=6,
+    column=0,
+    columnspan=2,
+    pady=5
+)
 
 # Transaction Table
 columns = ("Date", "Type", "Category", "Amount", "Description")
