@@ -308,6 +308,63 @@ def reset_filter():
 
 
 
+def delete_transaction():
+
+    selected_item = tree.selection()
+
+    if not selected_item:
+
+        messagebox.showwarning(
+            "No Selection",
+            "Please select a transaction to delete."
+        )
+        return
+
+    confirm = messagebox.askyesno(
+        "Confirm Delete",
+        "Are you sure you want to delete this transaction?"
+    )
+
+    if not confirm:
+        return
+
+    selected_values = tree.item(selected_item[0], "values")
+
+    rows = []
+
+    deleted = False
+
+    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+
+        reader = csv.reader(file)
+
+        header = next(reader)
+
+        for row in reader:
+
+            if (
+                not deleted
+                and tuple(row) == tuple(map(str, selected_values))
+            ):
+                deleted = True
+                continue
+
+            rows.append(row)
+
+    with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
+
+        writer = csv.writer(file)
+
+        writer.writerow(header)
+
+        writer.writerows(rows)
+
+    apply_filter()
+
+    update_summary()
+
+
+
 create_csv_file()
 
 root = tk.Tk()
@@ -434,6 +491,15 @@ trend_button = tk.Button(
 )
 
 trend_button.grid(row=7, column=0, columnspan=2, pady=5)
+
+# Delete Transaction Button
+delete_button = tk.Button(
+    input_frame,
+    text="Delete Selected Transaction",
+    command=delete_transaction
+)
+
+delete_button.grid(row=8, column=0, columnspan=2, pady=5)
 
 # Search Frame
 search_frame = tk.Frame(root)
