@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Education", "Healthcare", "Entertainment", "Other"]
 
-CSV_FILE = "transactions.csv"
+CSV_FILE = os.path.join(os.path.dirname(__file__),"transactions.csv")
 
 editing_transaction_id = None
 
@@ -143,15 +143,24 @@ def add_transaction():
 
 def load_transactions():
 
-    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+    try:
 
-        reader = csv.reader(file)
+        with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
 
-        next(reader, None)
+            reader = csv.reader(file)
 
-        for row in reader:
+            next(reader, None)
 
-            tree.insert("", "end", values=row)
+            for row in reader:
+
+                tree.insert("", "end", values=row)
+
+    except Exception as e:
+
+        messagebox.showerror(
+            "CSV Error",
+            f"Unable to load transactions.\n\n{e}"
+        )
 
 
 
@@ -160,33 +169,42 @@ def update_summary():
     total_income = 0
     total_expenses = 0
 
-    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+    try:
 
-        reader = csv.DictReader(file)
+        with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
 
-        for row in reader:
+            reader = csv.DictReader(file)
 
-            amount = float(row["Amount"])
+            for row in reader:
 
-            if row["Type"] == "Income":
-                total_income += amount
+                amount = float(row["Amount"])
 
-            else:
-                total_expenses += amount
+                if row["Type"] == "Income":
+                    total_income += amount
 
-    balance = total_income - total_expenses
+                else:
+                    total_expenses += amount
 
-    income_label.config(
-        text=f"Total Income: ₹{total_income:.2f}"
-    )
+        balance = total_income - total_expenses
 
-    expense_label.config(
-        text=f"Total Expenses: ₹{total_expenses:.2f}"
-    )
+        income_label.config(
+            text=f"Total Income: ₹{total_income:.2f}"
+        )
 
-    balance_label.config(
-        text=f"Current Balance: ₹{balance:.2f}"
-    )
+        expense_label.config(
+            text=f"Total Expenses: ₹{total_expenses:.2f}"
+        )
+
+        balance_label.config(
+            text=f"Current Balance: ₹{balance:.2f}"
+        )
+
+    except Exception as e:
+
+        messagebox.showerror(
+            "CSV Error",
+            f"Unable to calculate summary.\n\n{e}"
+        )
 
 
 
@@ -302,7 +320,10 @@ def apply_filter():
         for row in reader:
 
             matches_search = (
-                search_text in row["Category"].lower()
+                search_text in row["Date"].lower()
+                or search_text in row["Type"].lower()
+                or search_text in row["Category"].lower()
+                or search_text in row["Amount"].lower()
                 or search_text in row["Description"].lower()
             )
 
@@ -480,6 +501,14 @@ def save_changes():
             "Amount must be a number."
         )
         return
+    
+    if amount <= 0:
+
+            messagebox.showerror(
+            "Error",
+            "Amount must be greater than zero."
+            )
+            return
 
     rows = []
 
