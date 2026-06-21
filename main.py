@@ -9,6 +9,9 @@ CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Education", "Healthcare", 
 
 CSV_FILE = os.path.join(os.path.dirname(__file__),"transactions.csv")
 
+MIN_AMOUNT = 1
+MAX_AMOUNT = 10000000
+
 editing_transaction_id = None
 
 
@@ -100,11 +103,20 @@ def add_transaction():
         )
         return
 
-    if amount <= 0:
+    if amount < MIN_AMOUNT:
 
         messagebox.showerror(
             "Error",
-            "Amount must be greater than zero."
+            f"Amount must be at least ₹{MIN_AMOUNT}."
+        )
+        return
+
+
+    if amount > MAX_AMOUNT:
+
+        messagebox.showerror(
+            "Error",
+            f"Amount cannot exceed ₹{MAX_AMOUNT:,}."
         )
         return
     
@@ -502,14 +514,23 @@ def save_changes():
         )
         return
     
-    if amount <= 0:
+    if amount < MIN_AMOUNT:
 
-            messagebox.showerror(
+        messagebox.showerror(
             "Error",
-            "Amount must be greater than zero."
-            )
-            return
+            f"Amount must be at least ₹{MIN_AMOUNT}."
+        )
+        return
 
+
+    if amount > MAX_AMOUNT:
+
+        messagebox.showerror(
+            "Error",
+            f"Amount cannot exceed ₹{MAX_AMOUNT:,}."
+        )
+        return
+    
     rows = []
 
     with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
@@ -560,7 +581,7 @@ create_csv_file()
 
 root = tk.Tk()
 root.title("Personal Finance Dashboard")
-root.geometry("900x600")
+root.geometry("1300x850")
 root.resizable(True, True)
 
 # Title
