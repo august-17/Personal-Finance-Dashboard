@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
+from tkcalendar import DateEntry
 import csv
 import os
 import matplotlib.pyplot as plt
@@ -20,9 +21,9 @@ def handle_category_change(event):
 
     if category_combobox.get() == "Other":
 
-        custom_category_label.grid(row=4, column=0, padx=5, pady=5)
+        custom_category_label.grid(row=5, column=0, padx=5, pady=5)
 
-        custom_category_entry.grid(row=4, column=1, padx=5, pady=5)
+        custom_category_entry.grid(row=5, column=1, padx=5, pady=5)
 
     else:
 
@@ -122,7 +123,7 @@ def add_transaction():
     
     transaction_id = get_next_id()
 
-    date = datetime.now().strftime("%Y-%m-%d")
+    date = date_entry.get()
 
     with open(CSV_FILE, "a", newline="", encoding="utf-8") as file:
 
@@ -150,6 +151,8 @@ def add_transaction():
 
     custom_category_label.grid_remove()
     custom_category_entry.grid_remove()
+
+    date_entry.set_date(datetime.now())
 
 
 
@@ -441,6 +444,8 @@ def edit_transaction():
 
     editing_transaction_id = values[0]
 
+    date_entry.set_date(values[1])
+
     type_combobox.set(values[2])
 
     category = values[3]
@@ -456,9 +461,9 @@ def edit_transaction():
 
         category_combobox.set("Other")
 
-        custom_category_label.grid(row=4, column=0, padx=5, pady=5)
+        custom_category_label.grid(row=5, column=0, padx=5, pady=5)
 
-        custom_category_entry.grid(row=4, column=1, padx=5,pady=5)
+        custom_category_entry.grid(row=5, column=1, padx=5,pady=5)
 
         custom_category_entry.delete(0, tk.END)
         custom_category_entry.insert(0, category)
@@ -484,6 +489,8 @@ def save_changes():
         return
 
     transaction_type = type_combobox.get()
+
+    date = date_entry.get()
 
     category = category_combobox.get()
 
@@ -543,7 +550,7 @@ def save_changes():
 
             if row[0] == str(editing_transaction_id):
 
-                row = [row[0], row[1], transaction_type, category, amount, description]
+                row = [row[0], date, transaction_type, category, amount, description]
 
             rows.append(row)
 
@@ -569,6 +576,10 @@ def save_changes():
 
     custom_category_label.grid_remove()
     custom_category_entry.grid_remove()
+
+    date_entry.set_date(datetime.now())
+
+    type_combobox.current(0)
 
     messagebox.showinfo(
         "Success",
@@ -625,20 +636,31 @@ balance_label.grid(row=0, column=2, padx=20)
 input_frame = tk.Frame(root)
 input_frame.pack(pady=10)
 
+# Date
+tk.Label(input_frame, text="Date").grid(row=0, column=0, padx=5, pady=5)
+
+date_entry = DateEntry(
+    input_frame,
+    width=20,
+    date_pattern="yyyy-mm-dd"
+)
+
+date_entry.grid(row=0, column=1, padx=5, pady=5)
+
 # Type
-tk.Label(input_frame, text="Type").grid(row=0, column=0, padx=5, pady=5)
+tk.Label(input_frame, text="Type").grid(row=1, column=0, padx=5, pady=5)
 
 type_combobox = ttk.Combobox(
     input_frame,
-    values=["Income", "Expense"],
+    values=["Expense", "Income"],
     state="readonly",
     width=20
 )
-type_combobox.grid(row=0, column=1, padx=5, pady=5)
+type_combobox.grid(row=1, column=1, padx=5, pady=5)
 type_combobox.current(0)
 
 # Category
-tk.Label(input_frame, text="Category").grid(row=1, column=0, padx=5, pady=5)
+tk.Label(input_frame, text="Category").grid(row=2, column=0, padx=5, pady=5)
 
 category_combobox = ttk.Combobox(
     input_frame,
@@ -646,30 +668,30 @@ category_combobox = ttk.Combobox(
     state="readonly",
     width=20
 )
-category_combobox.grid(row=1, column=1, padx=5, pady=5)
+category_combobox.grid(row=2, column=1, padx=5, pady=5)
 category_combobox.current(0)
 
 #Custom category
 custom_category_label = tk.Label(input_frame, text="Custom Category")
 custom_category_entry = tk.Entry(input_frame, width=23)
 
-custom_category_label.grid(row=4, column=0, padx=5, pady=5)
-custom_category_entry.grid(row=4, column=1, padx=5, pady=5)
+custom_category_label.grid(row=5, column=0, padx=5, pady=5)
+custom_category_entry.grid(row=5, column=1, padx=5, pady=5)
 
 custom_category_label.grid_remove()
 custom_category_entry.grid_remove()
 
 # Amount
-tk.Label(input_frame, text="Amount").grid(row=2, column=0, padx=5, pady=5)
+tk.Label(input_frame, text="Amount").grid(row=3, column=0, padx=5, pady=5)
 
 amount_entry = tk.Entry(input_frame, width=23)
-amount_entry.grid(row=2, column=1, padx=5, pady=5)
+amount_entry.grid(row=3, column=1, padx=5, pady=5)
 
 # Description
-tk.Label(input_frame, text="Description").grid(row=3, column=0, padx=5, pady=5)
+tk.Label(input_frame, text="Description").grid(row=4, column=0, padx=5, pady=5)
 
 description_entry = tk.Entry(input_frame, width=23)
-description_entry.grid(row=3, column=1, padx=5, pady=5)
+description_entry.grid(row=4, column=1, padx=5, pady=5)
 
 #Bind category event
 category_combobox.bind(
@@ -684,7 +706,7 @@ add_button = tk.Button(
     command=add_transaction
 )
 
-add_button.grid(row=5, column=0, columnspan=2, pady=10)
+add_button.grid(row=6, column=0, columnspan=2, pady=10)
 
 # Expense Breakdown Button
 chart_button = tk.Button(
@@ -693,7 +715,7 @@ chart_button = tk.Button(
     command=show_expense_breakdown
 )
 
-chart_button.grid(row=6, column=0, columnspan=2, pady=5)
+chart_button.grid(row=7, column=0, columnspan=2, pady=5)
 
 # Monthly Trend Button
 trend_button = tk.Button(
@@ -702,7 +724,7 @@ trend_button = tk.Button(
     command=show_monthly_trend
 )
 
-trend_button.grid(row=7, column=0, columnspan=2, pady=5)
+trend_button.grid(row=8, column=0, columnspan=2, pady=5)
 
 # Delete Transaction Button
 delete_button = tk.Button(
@@ -711,7 +733,7 @@ delete_button = tk.Button(
     command=delete_transaction
 )
 
-delete_button.grid(row=8, column=0, columnspan=2, pady=5)
+delete_button.grid(row=9, column=0, columnspan=2, pady=5)
 
 # Edit Transaction Button
 edit_button = tk.Button(
@@ -720,7 +742,7 @@ edit_button = tk.Button(
     command=edit_transaction
 )
 
-edit_button.grid(row=9, column=0, columnspan=2, pady=5)
+edit_button.grid(row=10, column=0, columnspan=2, pady=5)
 
 # Save Changes Button
 save_button = tk.Button(
@@ -729,7 +751,7 @@ save_button = tk.Button(
     command=save_changes
 )
 
-save_button.grid(row=10, column=0, columnspan=2, pady=5)
+save_button.grid(row=11, column=0, columnspan=2, pady=5)
 
 # Search Frame
 search_frame = tk.Frame(root)
