@@ -370,6 +370,7 @@ def reset_filter():
 def delete_transaction():
 
     selected_item = tree.selection()
+    
 
     if not selected_item:
 
@@ -381,19 +382,21 @@ def delete_transaction():
 
     confirm = messagebox.askyesno(
         "Confirm Delete",
-        "Are you sure you want to delete this transaction?"
+        f"Delete {len(selected_item)} selected transaction(s)?"
     )
 
     if not confirm:
         return
 
-    selected_values = tree.item(selected_item[0], "values")
+    transaction_ids = []
 
-    transaction_id = selected_values[0]
+    for item in selected_item:
+
+        values = tree.item(item, "values")
+        transaction_ids.append(values[0])
 
     rows = []
 
-    deleted = False
 
     with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
 
@@ -403,11 +406,7 @@ def delete_transaction():
 
         for row in reader:
 
-            if (
-                not deleted
-                and row[0] == transaction_id
-            ):
-                deleted = True
+            if row[0] in transaction_ids:
                 continue
 
             rows.append(row)
@@ -431,6 +430,14 @@ def edit_transaction():
     global editing_transaction_id
 
     selected_item = tree.selection()
+
+    if len(selected_item) > 1:
+
+        messagebox.showwarning(
+            "Multiple Selection",
+            "Please select only one transaction to edit."
+        )
+        return
 
     if not selected_item:
 
@@ -729,7 +736,7 @@ trend_button.grid(row=8, column=0, columnspan=2, pady=5)
 # Delete Transaction Button
 delete_button = tk.Button(
     input_frame,
-    text="Delete Selected Transaction",
+    text="Delete Selected Transaction(s)",
     command=delete_transaction
 )
 
@@ -800,7 +807,8 @@ columns = ("ID", "Date", "Type", "Category", "Amount", "Description")
 tree = ttk.Treeview(
     root,
     columns=columns,
-    show="headings"
+    show="headings",
+    selectmode="extended"
 )
 
 for column in columns:
