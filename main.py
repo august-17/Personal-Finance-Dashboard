@@ -115,6 +115,30 @@ def save_budget():
 
 
 
+def reset_budget():
+
+    confirm = messagebox.askyesno(
+        "Reset Budget",
+        "Are you sure you want to reset the budget?"
+    )
+
+    if not confirm:
+        return
+
+    if os.path.exists(BUDGET_FILE):
+        os.remove(BUDGET_FILE)
+
+    budget_entry.delete(0, tk.END)
+
+    update_summary()
+
+    messagebox.showinfo(
+        "Success",
+        "Budget reset successfully."
+    )
+
+
+
 def get_next_id():
 
     highest_id = 0
@@ -293,8 +317,6 @@ def update_summary():
 
         remaining_budget = budget - monthly_expenses
 
-        display_remaining = max(0, remaining_budget)
-
         income_label.config(
             text=f"Total Income: ₹{total_income:.2f}"
         )
@@ -309,10 +331,6 @@ def update_summary():
 
         budget_label.config(
             text=f"Monthly Budget: ₹{budget:.2f}"
-        )
-
-        remaining_label.config(
-            text=f"Remaining This Month: ₹{display_remaining:.2f}"
         )
 
         if budget == 0:
@@ -332,7 +350,7 @@ def update_summary():
         else:
 
             status_label.config(
-                text=f"Budget Exceeded By ₹{abs(remaining_budget):.2f}",
+                text=f"Budget Status: ₹{abs(remaining_budget):.2f} Exceeded",
                 fg = "red"
             )
 
@@ -801,14 +819,6 @@ budget_label = tk.Label(
 
 budget_label.grid(row=1, column=0, padx=20)
 
-remaining_label = tk.Label(
-    summary_frame,
-    text="Remaining This Month: ₹0.00",
-    font=("Arial", 12, "bold")
-)
-
-remaining_label.grid(row=1, column=1, padx=20)
-
 status_label = tk.Label(
     summary_frame,
     text="Budget Status: Not Set",
@@ -842,7 +852,14 @@ budget_button = tk.Button(
 
 budget_button.grid(row=0, column=2, padx=5)
 
+# Reset Budget Button
+reset_budget_button = tk.Button(
+    budget_frame,
+    text="Reset Budget",
+    command=reset_budget
+)
 
+reset_budget_button.grid(row=0, column=3, padx=5)
 
 # Input Frame
 input_frame = tk.Frame(root)
