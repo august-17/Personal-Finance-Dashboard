@@ -4,6 +4,8 @@ from datetime import datetime
 from tkcalendar import DateEntry
 import csv
 import os
+from tkinter import filedialog
+import shutil
 import matplotlib.pyplot as plt
 
 CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Education", "Healthcare", "Entertainment", "Other"]
@@ -595,6 +597,38 @@ def save_changes():
 
 
 
+def export_report():
+
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".csv",
+        filetypes=[("CSV Files", "*.csv")],
+        title="Save Financial Report"
+    )
+
+    if not file_path:
+        return
+
+    try:
+
+        shutil.copy(
+            CSV_FILE,
+            file_path
+        )
+
+        messagebox.showinfo(
+            "Success",
+            "Financial report exported successfully."
+        )
+
+    except Exception as e:
+
+        messagebox.showerror(
+            "Export Error",
+            f"Unable to export report.\n\n{e}"
+        )
+
+
+
 create_csv_file()
 
 root = tk.Tk()
@@ -715,51 +749,6 @@ add_button = tk.Button(
 
 add_button.grid(row=6, column=0, columnspan=2, pady=10)
 
-# Expense Breakdown Button
-chart_button = tk.Button(
-    input_frame,
-    text="Show Expense Breakdown",
-    command=show_expense_breakdown
-)
-
-chart_button.grid(row=7, column=0, columnspan=2, pady=5)
-
-# Monthly Trend Button
-trend_button = tk.Button(
-    input_frame,
-    text="Show Monthly Trend",
-    command=show_monthly_trend
-)
-
-trend_button.grid(row=8, column=0, columnspan=2, pady=5)
-
-# Delete Transaction Button
-delete_button = tk.Button(
-    input_frame,
-    text="Delete Selected Transaction(s)",
-    command=delete_transaction
-)
-
-delete_button.grid(row=9, column=0, columnspan=2, pady=5)
-
-# Edit Transaction Button
-edit_button = tk.Button(
-    input_frame,
-    text="Edit Selected Transaction",
-    command=edit_transaction
-)
-
-edit_button.grid(row=10, column=0, columnspan=2, pady=5)
-
-# Save Changes Button
-save_button = tk.Button(
-    input_frame,
-    text="Save Changes",
-    command=save_changes
-)
-
-save_button.grid(row=11, column=0, columnspan=2, pady=5)
-
 # Search Frame
 search_frame = tk.Frame(root)
 search_frame.pack(pady=10)
@@ -769,6 +758,65 @@ tk.Label(search_frame, text="Search").grid(row=0, column=0, padx=5)
 search_entry = tk.Entry(search_frame, width=30)
 
 search_entry.grid(row=0, column=1, padx=5)
+
+# Action Frame
+action_frame = tk.Frame(root)
+
+action_frame.pack(pady=10)
+
+# Edit Transaction Button
+edit_button = tk.Button(
+    action_frame,
+    text="Edit Selected Transaction",
+    command=edit_transaction
+)
+
+edit_button.grid(row=0, column=0, padx=5, pady=5)
+
+# Save Changes Button
+save_button = tk.Button(
+    action_frame,
+    text="Save Changes",
+    command=save_changes
+)
+
+save_button.grid(row=0, column=1, padx=5, pady=5)
+
+# Delete Transaction Button
+delete_button = tk.Button(
+    action_frame,
+    text="Delete Selected Transaction(s)",
+    command=delete_transaction
+)
+
+delete_button.grid(row=0, column=2, padx=5, pady=5)
+
+# Expense Breakdown Button
+chart_button = tk.Button(
+    action_frame,
+    text="Show Expense Breakdown",
+    command=show_expense_breakdown
+)
+
+chart_button.grid(row=1, column=0, padx=5, pady=5)
+
+# Monthly Trend Button
+trend_button = tk.Button(
+    action_frame,
+    text="Show Monthly Trend",
+    command=show_monthly_trend
+)
+
+trend_button.grid(row=1, column=1, padx=5, pady=5)
+
+# Export button
+export_button = tk.Button(
+    action_frame,
+    text="Export Financial Report",
+    command=export_report
+)
+
+export_button.grid(row=1, column=2, padx=5, pady=5)
 
 # Filter Label
 tk.Label(search_frame, text="Type").grid(row=0, column=2, padx=5)
