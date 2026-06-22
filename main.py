@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt
 
 CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Education", "Healthcare", "Entertainment", "Other"]
 
-CSV_FILE = os.path.join(os.path.dirname(__file__),"transactions.csv")
+CSV_FILE = os.path.join(os.path.dirname(__file__), "transactions.csv")
+
+BUDGET_FILE = os.path.join(os.path.dirname(__file__), "budget.txt")
 
 MIN_AMOUNT = 1
 MAX_AMOUNT = 10000000
@@ -43,6 +45,73 @@ def create_csv_file():
             writer = csv.writer(file)
 
             writer.writerow(["ID", "Date", "Type", "Category", "Amount", "Description"])
+
+
+
+def load_budget():
+
+    if not os.path.exists(BUDGET_FILE):
+        return 0
+
+    try:
+
+        with open(BUDGET_FILE, "r", encoding="utf-8") as file:
+            return float(file.read())
+
+    except:
+
+        return 0
+
+
+def save_budget():
+
+    budget = budget_entry.get().strip()
+
+    if not budget:
+
+        messagebox.showerror(
+            "Error",
+            "Please enter a budget amount."
+        )
+        return
+
+    try:
+
+        budget = float(budget)
+
+    except ValueError:
+
+        messagebox.showerror(
+            "Error",
+            "Budget must be a number."
+        )
+        return
+
+    if budget <= 0:
+
+        messagebox.showerror(
+            "Error",
+            "Budget must be greater than zero."
+        )
+        return
+    
+    if budget > MAX_AMOUNT:
+
+        messagebox.showerror(
+            "Error",
+            f"Budget cannot exceed ₹{MAX_AMOUNT:,}."
+        )
+        return
+
+    with open(BUDGET_FILE, "w", encoding="utf-8") as file:
+        file.write(str(budget))
+
+    update_summary()
+
+    messagebox.showinfo(
+        "Success",
+        "Budget saved successfully."
+    )
 
 
 
@@ -204,6 +273,28 @@ def update_summary():
 
         balance = total_income - total_expenses
 
+        budget = load_budget()
+
+        current_month = datetime.now().strftime("%Y-%m")
+
+        monthly_expenses = 0
+
+        with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+
+            monthly_reader = csv.DictReader(file)
+
+            for row in monthly_reader:
+
+                if (
+                    row["Type"] == "Expense"
+                    and row["Date"].startswith(current_month)
+                ):
+                    monthly_expenses += float(row["Amount"])
+
+        remaining_budget = budget - monthly_expenses
+
+        display_remaining = max(0, remaining_budget)
+
         income_label.config(
             text=f"Total Income: ₹{total_income:.2f}"
         )
@@ -215,6 +306,35 @@ def update_summary():
         balance_label.config(
             text=f"Current Balance: ₹{balance:.2f}"
         )
+
+        budget_label.config(
+            text=f"Monthly Budget: ₹{budget:.2f}"
+        )
+
+        remaining_label.config(
+            text=f"Remaining This Month: ₹{display_remaining:.2f}"
+        )
+
+        if budget == 0:
+
+            status_label.config(
+                text="Budget Status: Not Set",
+                fg = "black"
+            )
+
+        elif remaining_budget >= 0:
+
+            status_label.config(
+                text=f"Budget Status: ₹{remaining_budget:.2f} Remaining",
+                fg = "green"
+            )
+
+        else:
+
+            status_label.config(
+                text=f"Budget Exceeded By ₹{abs(remaining_budget):.2f}",
+                fg = "red"
+            )
 
     except Exception as e:
 
@@ -673,6 +793,57 @@ balance_label = tk.Label(
 
 balance_label.grid(row=0, column=2, padx=20)
 
+budget_label = tk.Label(
+    summary_frame,
+    text="Monthly Budget: ₹0.00",
+    font=("Arial", 12, "bold")
+)
+
+budget_label.grid(row=1, column=0, padx=20)
+
+remaining_label = tk.Label(
+    summary_frame,
+    text="Remaining This Month: ₹0.00",
+    font=("Arial", 12, "bold")
+)
+
+remaining_label.grid(row=1, column=1, padx=20)
+
+status_label = tk.Label(
+    summary_frame,
+    text="Budget Status: Not Set",
+    font=("Arial", 12, "bold")
+)
+
+status_label.grid(row=1, column=2, padx=20)
+
+# Budget Frame
+budget_frame = tk.Frame(root)
+
+budget_frame.pack(pady=5)
+
+tk.Label(budget_frame, text="Monthly Budget").grid(row=0, column=0, padx=5)
+
+budget_entry = tk.Entry(budget_frame, width=20)
+
+budget_entry.grid(row=0, column=1, padx=5)
+
+saved_budget = load_budget()
+
+if saved_budget > 0:
+    budget_entry.insert(0, str(saved_budget))
+
+# Set Budget Button
+budget_button = tk.Button(
+    budget_frame,
+    text="Set Budget",
+    command=save_budget
+)
+
+budget_button.grid(row=0, column=2, padx=5)
+
+
+
 # Input Frame
 input_frame = tk.Frame(root)
 input_frame.pack(pady=10)
@@ -734,7 +905,7 @@ tk.Label(input_frame, text="Description").grid(row=4, column=0, padx=5, pady=5)
 description_entry = tk.Entry(input_frame, width=23)
 description_entry.grid(row=4, column=1, padx=5, pady=5)
 
-#Bind category event
+# Bind category event
 category_combobox.bind(
     "<<ComboboxSelected>>",
     handle_category_change
