@@ -36,6 +36,25 @@ def handle_category_change(event):
 
 
 
+def clear_inputs():
+
+    amount_entry.delete(0, tk.END)
+
+    description_entry.delete(0, tk.END)
+
+    custom_category_entry.delete(0, tk.END)
+
+    category_combobox.current(0)
+
+    custom_category_label.grid_remove()
+    custom_category_entry.grid_remove()
+
+    date_entry.set_date(datetime.now())
+
+    type_combobox.current(0)
+
+
+
 def create_csv_file():
 
     if not os.path.exists(CSV_FILE):
@@ -226,24 +245,13 @@ def add_transaction():
 
         writer.writerow([transaction_id, date, transaction_type, category, amount, description])
 
-        insert_row((transaction_id, date, transaction_type, category, amount, description))
-
-    amount_entry.delete(0, tk.END)
-
-    description_entry.delete(0, tk.END)
-
-    custom_category_entry.delete(0, tk.END)
+    clear_inputs()
 
     update_summary()
 
     apply_filter()
 
-    category_combobox.current(0)
-
-    custom_category_label.grid_remove()
-    custom_category_entry.grid_remove()
-
-    date_entry.set_date(datetime.now())
+    
 
 
 
@@ -537,12 +545,12 @@ def delete_transaction():
     if not confirm:
         return
 
-    transaction_ids = []
+    transaction_ids = set()
 
     for item in selected_item:
 
         values = tree.item(item, "values")
-        transaction_ids.append(values[0])
+        transaction_ids.add(values[0])
 
     rows = []
 
@@ -724,18 +732,7 @@ def save_changes():
 
     update_summary()
 
-    amount_entry.delete(0, tk.END)
-    description_entry.delete(0, tk.END)
-    custom_category_entry.delete(0, tk.END)
-
-    category_combobox.current(0)
-
-    custom_category_label.grid_remove()
-    custom_category_entry.grid_remove()
-
-    date_entry.set_date(datetime.now())
-
-    type_combobox.current(0)
+    clear_inputs()
 
     messagebox.showinfo(
         "Success",
@@ -956,6 +953,11 @@ search_entry = tk.Entry(search_frame, width=30)
 
 search_entry.grid(row=0, column=1, padx=5)
 
+search_entry.bind(
+    "<KeyRelease>",
+    lambda event: apply_filter()
+)
+
 # Filter
 tk.Label(search_frame, text="Type").grid(row=0, column=2, padx=5)
 
@@ -969,14 +971,10 @@ filter_combobox = ttk.Combobox(
 filter_combobox.grid(row=0, column=3,padx=5)
 filter_combobox.current(0)
 
-# Filter Button
-filter_button = tk.Button(
-    search_frame,
-    text="Apply Filter",
-    command=apply_filter
+filter_combobox.bind(
+    "<<ComboboxSelected>>",
+    lambda event: apply_filter()
 )
-
-filter_button.grid(row=0, column=4, padx=10)
 
 # Reset Filter Button
 reset_button = tk.Button(
@@ -985,7 +983,7 @@ reset_button = tk.Button(
     command=reset_filter
 )
 
-reset_button.grid(row=0, column=5, padx=5)
+reset_button.grid(row=0, column=4, padx=5)
 
 # Action Frame
 action_frame = tk.Frame(root)
