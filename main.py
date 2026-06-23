@@ -947,6 +947,37 @@ search_entry = tk.Entry(search_frame, width=30)
 
 search_entry.grid(row=0, column=1, padx=5)
 
+# Filter
+tk.Label(search_frame, text="Type").grid(row=0, column=2, padx=5)
+
+filter_combobox = ttk.Combobox(
+    search_frame,
+    values=["All", "Income", "Expense"],
+    state="readonly",
+    width=15
+)
+
+filter_combobox.grid(row=0, column=3,padx=5)
+filter_combobox.current(0)
+
+# Filter Button
+filter_button = tk.Button(
+    search_frame,
+    text="Apply Filter",
+    command=apply_filter
+)
+
+filter_button.grid(row=0, column=4, padx=10)
+
+# Reset Filter Button
+reset_button = tk.Button(
+    search_frame,
+    text="Reset Filter",
+    command=reset_filter
+)
+
+reset_button.grid(row=0, column=5, padx=5)
+
 # Action Frame
 action_frame = tk.Frame(root)
 
@@ -1006,42 +1037,16 @@ export_button = tk.Button(
 
 export_button.grid(row=1, column=2, padx=5, pady=5)
 
-# Filter Label
-tk.Label(search_frame, text="Type").grid(row=0, column=2, padx=5)
+# Table Frame
+table_frame = tk.Frame(root)
 
-filter_combobox = ttk.Combobox(
-    search_frame,
-    values=["All", "Income", "Expense"],
-    state="readonly",
-    width=15
-)
-
-filter_combobox.grid(row=0, column=3,padx=5)
-filter_combobox.current(0)
-
-# Filter Button
-filter_button = tk.Button(
-    search_frame,
-    text="Apply Filter",
-    command=apply_filter
-)
-
-filter_button.grid(row=0, column=4, padx=10)
-
-# Reset Filter Button
-reset_button = tk.Button(
-    search_frame,
-    text="Reset Filter",
-    command=reset_filter
-)
-
-reset_button.grid(row=0, column=5, padx=5)
+table_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
 # Transaction Table
 columns = ("ID", "Date", "Type", "Category", "Amount", "Description")
 
 tree = ttk.Treeview(
-    root,
+    table_frame,
     columns=columns,
     show="headings",
     selectmode="extended"
@@ -1054,11 +1059,41 @@ for column in columns:
 
         tree.column(column, width=0, stretch=False)
 
+    elif column == "Description":
+
+        tree.column(column, width=300)        
+
     else:
 
         tree.column(column, width=150)
 
-tree.pack(fill="both", expand=True, padx=20, pady=20)
+
+# Vertical Scrollbar
+scrollbar_y = ttk.Scrollbar(
+    table_frame,
+    orient="vertical",
+    command=tree.yview
+)
+
+tree.configure(yscrollcommand=scrollbar_y.set)
+
+# Horizontal Scrollbar
+scrollbar_x = ttk.Scrollbar(
+    table_frame,
+    orient="horizontal",
+    command=tree.xview
+)
+
+tree.configure(xscrollcommand=scrollbar_x.set)
+
+# Pack Widgets
+scrollbar_y.pack(side="right", fill="y")
+
+scrollbar_x.pack(side="bottom", fill="x")
+
+tree.pack(side="left", fill="both", expand=True)
+
+
 
 load_transactions()
 
