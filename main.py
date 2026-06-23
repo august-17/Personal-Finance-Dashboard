@@ -226,11 +226,7 @@ def add_transaction():
 
         writer.writerow([transaction_id, date, transaction_type, category, amount, description])
 
-    tree.insert(
-        "",
-        "end",
-        values=(transaction_id, date, transaction_type, category, amount, description)
-    )
+        insert_row((transaction_id, date, transaction_type, category, amount, description))
 
     amount_entry.delete(0, tk.END)
 
@@ -251,6 +247,16 @@ def add_transaction():
 
 
 
+def insert_row(values):
+
+    row_count = len(tree.get_children())
+
+    tag = "evenrow" if row_count % 2 == 0 else "oddrow"
+
+    tree.insert("", "end", values=values, tags=(tag,))
+
+
+
 def load_transactions():
 
     try:
@@ -263,7 +269,7 @@ def load_transactions():
 
             for row in reader:
 
-                tree.insert("", "end", values=row)
+                insert_row(row)
 
     except Exception as e:
 
@@ -488,12 +494,15 @@ def apply_filter():
             )
 
             if matches_search and matches_type:
-
-                tree.insert(
-                    "",
-                    "end",
-                    values=(row["ID"],row["Date"], row["Type"], row["Category"], row["Amount"], row["Description"])
-                )
+                
+                insert_row((
+                    row["ID"],
+                    row["Date"],
+                    row["Type"],
+                    row["Category"],
+                    row["Amount"],
+                    row["Description"]
+                ))
 
 
 
@@ -1053,6 +1062,7 @@ tree = ttk.Treeview(
 )
 
 for column in columns:
+
     tree.heading(column, text=column)
 
     if column == "ID":
@@ -1061,12 +1071,25 @@ for column in columns:
 
     elif column == "Description":
 
-        tree.column(column, width=300)        
+        tree.column(column, width=300, anchor="w")
+
+    elif column == "Amount":
+
+        tree.column(column, width=120, anchor="center")
 
     else:
 
-        tree.column(column, width=150)
+        tree.column(column, width=140, anchor="center")
 
+tree.tag_configure(
+    "evenrow",
+    background="#f5f5f5"
+)
+
+tree.tag_configure(
+    "oddrow",
+    background="white"
+)
 
 # Vertical Scrollbar
 scrollbar_y = ttk.Scrollbar(
