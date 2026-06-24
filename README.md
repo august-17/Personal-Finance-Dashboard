@@ -1,6 +1,6 @@
 # Personal Finance Dashboard
 
-A desktop-based Personal Finance Dashboard built with **Python, Tkinter, CSV, Matplotlib, and tkcalendar** that helps users manage income and expenses, track spending patterns, visualize financial data, and maintain transaction records through an intuitive graphical interface.
+A desktop-based Personal Finance Dashboard built with Python and Tkinter that helps users manage income, expenses, budgets, and financial reports through an intuitive graphical interface. The application provides transaction management, financial analytics, budget tracking, data visualization, and reporting features.
 
 ---
 
@@ -9,82 +9,67 @@ A desktop-based Personal Finance Dashboard built with **Python, Tkinter, CSV, Ma
 ### Transaction Management
 - Add income and expense transactions
 - Edit existing transactions
-- Delete single or multiple transactions at once
+- Delete single or multiple transactions
 - Automatic transaction ID generation
-- Custom transaction descriptions
-- Persistent storage using CSV files
+- Calendar-based date selection
+- Custom transaction categories using "Other"
+- Input validation for amounts and budgets
+- Automatic transaction table refresh after updates
 
-### Date Management
-- User-selectable transaction dates using a calendar picker
-- Supports recording past and future transactions
-- Date stored in `YYYY-MM-DD` format
+### Financial Tracking
+- Real-time income tracking
+- Real-time expense tracking
+- Current balance calculation
+- Monthly budget management
+- Budget status monitoring
+- Budget exceeded alerts
+- Budget reset functionality
+- Monthly expense monitoring
 
-### Categories
-- Predefined categories:
-  - Food
-  - Travel
-  - Shopping
-  - Bills
-  - Education
-  - Healthcare
-  - Entertainment
-- Custom category support through the **Other** option
-
-### Financial Summary
-- Total Income
-- Total Expenses
-- Current Balance
-
-All values are automatically updated whenever transactions are added, edited, or deleted.
-
-### Search and Filtering
+### Search & Filtering
 - Search transactions by:
   - Date
   - Type
   - Category
   - Amount
   - Description
-- Filter transactions by:
-  - All
+- Filter by:
+  - All Transactions
   - Income
   - Expense
 - Reset filters instantly
 
-### Data Visualization
+### Reports & Analytics
+- Expense Breakdown Pie Chart
+- Monthly Expense Trend Graph
+- Category-Wise Spending Report
+- CSV Financial Report Export
 
-#### Expense Breakdown
-Interactive pie chart displaying:
-- Category-wise expense distribution
-- Percentage contribution of each category
+### Data Management
+- CSV-based transaction storage
+- Persistent budget storage
+- Automatic data loading on startup
+- Multi-transaction deletion support
 
-#### Monthly Expense Trend
-Line chart displaying:
-- Monthly expense trends
-- Expense growth and spending patterns over time
-
-### Validation and Error Handling
-- Prevents empty amount fields
-- Validates numeric amounts
-- Minimum amount validation
-- Maximum amount validation
-- Custom category validation
-- CSV loading error handling
-- CSV summary calculation error handling
-- Edit operation validation
-- Multi-selection protection during editing
+### User Interface
+- Interactive transaction table
+- Responsive Tkinter GUI
+- Organized action controls
+- Calendar date picker
+- Simple and user-friendly design
 
 ---
 
 ## Technologies Used
 
-- Python 3
+- Python
 - Tkinter
 - ttk
 - tkcalendar
-- CSV
 - Matplotlib
+- CSV
 - OS Module
-- Datetime Module
+- Shutil
 
 ---
 
@@ -95,6 +80,7 @@ Personal-Finance-Dashboard/
 │
 ├── main.py
 ├── transactions.csv
+├── budget.txt
 ├── README.md
 └── requirements.txt
 ```
@@ -103,27 +89,20 @@ Personal-Finance-Dashboard/
 
 ## Installation
 
-### Clone the Repository
+### Clone Repository
 
 ```bash
-git clone https://github.com/your-username/personal-finance-dashboard.git
+git clone https://github.com/august-17/personal-finance-dashboard.git
 cd personal-finance-dashboard
 ```
 
 ### Install Dependencies
 
 ```bash
-pip install matplotlib
-pip install tkcalendar
+pip install tkcalendar matplotlib
 ```
 
-Or:
-
-```bash
-pip install -r requirements.txt
-```
-
-### Run the Application
+### Run Application
 
 ```bash
 python main.py
@@ -131,81 +110,122 @@ python main.py
 
 ---
 
-## Usage
+## How It Works
 
-### Adding a Transaction
+### Adding Transactions
 
-1. Select a date.
-2. Choose Income or Expense.
-3. Select a category.
-4. Enter amount.
-5. Add an optional description.
-6. Click **Add Transaction**.
+1. Select date
+2. Choose transaction type
+3. Select category
+4. Enter amount
+5. Add description
+6. Click **Add Transaction**
 
-### Editing a Transaction
+### Budget Management
 
-1. Select a single transaction.
-2. Click **Edit Selected Transaction**.
-3. Modify the details.
-4. Click **Save Changes**.
+1. Enter monthly budget
+2. Click **Set Budget**
+3. Monitor budget status in real time
+4. Reset budget when required
 
-### Deleting Transactions
+### Analytics
 
-1. Select one or multiple transactions.
-2. Click **Delete Selected Transaction(s)**.
-3. Confirm deletion.
+Users can generate:
 
-### Viewing Analytics
-
-- Click **Show Expense Breakdown** for category-wise spending visualization.
-- Click **Show Monthly Trend** to analyze monthly expenses.
+- Expense Breakdown Pie Chart
+- Monthly Expense Trend
+- Category-Wise Spending Report
+- Financial Report Export
 
 ---
 
-## Data Storage
+## Current Implemented Features
 
-All transaction data is stored locally in:
+### Transaction System
+✔ Add Transactions  
+✔ Edit Transactions  
+✔ Save Edited Transactions  
+✔ Multi-Transaction Delete  
+✔ Custom Categories  
+✔ Input Validation  
 
-```text
-transactions.csv
-```
+### Budget System
+✔ Monthly Budget Tracking  
+✔ Budget Status Monitoring  
+✔ Budget Exceeded Detection  
+✔ Budget Reset Functionality  
 
-The file is automatically created on first launch if it does not already exist.
+### Reports
+✔ Expense Breakdown Chart  
+✔ Monthly Expense Trend  
+✔ Category-Wise Spending Report  
+✔ CSV Report Export  
 
-CSV format:
-
-```csv
-ID,Date,Type,Category,Amount,Description
-1,2026-06-22,Expense,Food,250,Lunch
-2,2026-06-22,Income,Salary,50000,Monthly Salary
-```
-
----
-
-## Key Highlights
-
-- User-friendly GUI built with Tkinter
-- Calendar-based date selection
-- Multi-transaction deletion support
-- Real-time financial summaries
-- Dynamic expense analytics
-- Search and filtering functionality
-- Strong input validation
-- Persistent local storage
-- Lightweight and easy to use
+### Search & Filter
+✔ Search Transactions  
+✔ Filter by Type  
+✔ Reset Filters  
+✔ Auto Refresh After Updates  
 
 ---
 
-## Future Enhancements
+## Upcoming Features
 
-- Export Financial Reports
-- Excel Report Generation
-- Advanced Financial Analytics
-- Dashboard UI Redesign
-- Dark Mode Support
-- Budget Planning and Alerts
-- Savings Goal Tracking
-- Database Integration (SQLite/MySQL)
+### Analytics
+- Monthly Summary Popup
+- Income vs Expense Pie Chart
+- Income vs Expense Bar Chart
+- Dashboard Insights
+- Advanced Analytics
+
+### Exporting
+- Export Filtered Results
+- Excel Report Export
+- PDF Report Export
+
+### Transaction Enhancements
+- Sort Transactions (Date, Amount, Category)
+- Undo Delete
+
+### Budget Improvements
+- Category Budgeting
+
+### UI Improvements
+- Dashboard Cards
+- Dark Theme
+- Modern UI Design
+- Complete Dashboard Redesign
+
+---
+
+## Key Learning Outcomes
+
+This project demonstrates:
+
+- Object-oriented programming concepts
+- GUI development using Tkinter
+- Data persistence using CSV files
+- File handling in Python
+- Financial data processing
+- Data visualization using Matplotlib
+- User input validation
+- Budget tracking logic
+- Search and filtering implementation
+
+---
+
+## Future Scope
+
+The project can be expanded into a full-featured finance management system by integrating:
+
+- SQLite database support
+- User authentication
+- Cloud synchronization
+- Expense forecasting
+- AI-powered spending insights
+- PDF and Excel reporting
+- Multi-user support
+- Mobile application integration
 
 ---
 
@@ -213,6 +233,5 @@ ID,Date,Type,Category,Amount,Description
 
 **August Kumar Sasmal**
 
-B.Tech Computer Science & Engineering  
+B.Tech Computer Science & Engineering 
 Manipal Institute of Technology, Manipal
-

@@ -17,6 +17,9 @@ BUDGET_FILE = os.path.join(os.path.dirname(__file__), "budget.txt")
 MIN_AMOUNT = 1
 MAX_AMOUNT = 10000000
 
+LABEL_FONT = ("Arial", 12, "bold")
+TITLE_FONT = ("Arial", 18, "bold")
+
 editing_transaction_id = None
 
 
@@ -67,6 +70,14 @@ def create_csv_file():
 
 
 
+def read_transactions():
+
+    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+
+        return list(csv.DictReader(file))
+
+
+
 def load_budget():
 
     if not os.path.exists(BUDGET_FILE):
@@ -77,7 +88,7 @@ def load_budget():
         with open(BUDGET_FILE, "r", encoding="utf-8") as file:
             return float(file.read())
 
-    except:
+    except ValueError:
 
         return 0
 
@@ -162,16 +173,12 @@ def get_next_id():
 
     highest_id = 0
 
-    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+    for row in read_transactions():
 
-        reader = csv.DictReader(file)
+        current_id = int(row["ID"])
 
-        for row in reader:
-
-            current_id = int(row["ID"])
-
-            if current_id > highest_id:
-                highest_id = current_id
+        if current_id > highest_id:
+            highest_id = current_id
 
     return highest_id + 1
 
@@ -292,42 +299,28 @@ def update_summary():
 
     total_income = 0
     total_expenses = 0
+    monthly_expenses = 0
 
     try:
-
-        with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
-
-            reader = csv.DictReader(file)
-
-            for row in reader:
-
-                amount = float(row["Amount"])
-
-                if row["Type"] == "Income":
-                    total_income += amount
-
-                else:
-                    total_expenses += amount
-
-        balance = total_income - total_expenses
 
         budget = load_budget()
 
         current_month = datetime.now().strftime("%Y-%m")
 
-        monthly_expenses = 0
+        for row in read_transactions():
 
-        with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+            amount = float(row["Amount"])
 
-            monthly_reader = csv.DictReader(file)
+            if row["Type"] == "Income":
+                total_income += amount
 
-            for row in monthly_reader:
+            else:
+                total_expenses += amount
 
-                if (
-                    row["Type"] == "Expense"
-                    and row["Date"].startswith(current_month)
-                ):
-                    monthly_expenses += float(row["Amount"])
+                if row["Date"].startswith(current_month):
+                    monthly_expenses += amount
+
+        balance = total_income - total_expenses
 
         remaining_budget = budget - monthly_expenses
 
@@ -351,21 +344,21 @@ def update_summary():
 
             status_label.config(
                 text="Budget Status: Not Set",
-                fg = "black"
+                fg="black"
             )
 
         elif remaining_budget >= 0:
 
             status_label.config(
                 text=f"Budget Status: ₹{remaining_budget:.2f} Remaining",
-                fg = "green"
+                fg="green"
             )
 
         else:
 
             status_label.config(
                 text=f"Budget Status: ₹{abs(remaining_budget):.2f} Exceeded",
-                fg = "red"
+                fg="red"
             )
 
     except Exception as e:
@@ -381,21 +374,17 @@ def show_expense_breakdown():
 
     category_totals = {}
 
-    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+    for row in read_transactions():
 
-        reader = csv.DictReader(file)
+        if row["Type"] == "Expense":
 
-        for row in reader:
+            category = row["Category"]
+            amount = float(row["Amount"])
 
-            if row["Type"] == "Expense":
+            if category not in category_totals:
+                category_totals[category] = 0
 
-                category = row["Category"]
-                amount = float(row["Amount"])
-
-                if category not in category_totals:
-                    category_totals[category] = 0
-
-                category_totals[category] += amount
+            category_totals[category] += amount
 
     if not category_totals:
 
@@ -419,26 +408,89 @@ def show_expense_breakdown():
 
 
 
+def show_category_report():
+
+    category_totals = {}
+
+    for row in read_transactions():
+
+        if row["Type"] == "Expense":
+
+            category = row["Category"]
+
+            amount = float(row["Amount"])
+
+            category_totals[category] = (category_totals.get(category, 0) + amount  )
+
+    if not category_totals:
+
+        messagebox.showinfo(
+            "No Data",
+            "No expense data available."
+        )
+        return
+
+    report_window = tk.Toplevel(root)
+
+    report_window.title("Category-Wise Spending Report")
+
+    report_window.geometry("500x400")
+
+    report_window.resizable(False, False)
+
+    text = tk.Text(
+        report_window,
+        font=("Courier New", 11)
+    )
+
+    text.pack(fill="both", expand=True, padx=10, pady=10)
+
+    report = ""
+
+    report += f"{'Category':<25}{'Amount'}\n"
+
+    report += "-" * 40 + "\n"
+
+    total = 0
+
+    for category, amount in sorted(category_totals.items()):
+
+        report += (
+            f"{category:<25}"
+            f"₹{amount:,.2f}\n"
+        )
+
+        total += amount
+
+    report += "-" * 40 + "\n"
+
+    report += (
+        f"{'Total Expenses':<25}"
+        f"₹{total:,.2f}"
+    )
+
+    text.insert("1.0", report)
+
+    text.config(state="disabled")
+
+
+
 def show_monthly_trend():
 
     monthly_expenses = {}
 
-    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+    for row in read_transactions():
 
-        reader = csv.DictReader(file)
+        if row["Type"] == "Expense":
 
-        for row in reader:
+            month = row["Date"][:7]      # YYYY-MM
 
-            if row["Type"] == "Expense":
+            amount = float(row["Amount"])
 
-                month = row["Date"][:7]      # YYYY-MM
+            if month not in monthly_expenses:
+                monthly_expenses[month] = 0
 
-                amount = float(row["Amount"])
-
-                if month not in monthly_expenses:
-                    monthly_expenses[month] = 0
-
-                monthly_expenses[month] += amount
+            monthly_expenses[month] += amount
 
     if not monthly_expenses:
 
@@ -482,35 +534,31 @@ def apply_filter():
 
     selected_type = filter_combobox.get()
 
-    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+    for row in read_transactions():
 
-        reader = csv.DictReader(file)
+        matches_search = (
+            search_text in row["Date"].lower()
+            or search_text in row["Type"].lower()
+            or search_text in row["Category"].lower()
+            or search_text in row["Amount"].lower()
+            or search_text in row["Description"].lower()
+        )
 
-        for row in reader:
+        matches_type = (
+            selected_type == "All"
+            or row["Type"] == selected_type
+        )
 
-            matches_search = (
-                search_text in row["Date"].lower()
-                or search_text in row["Type"].lower()
-                or search_text in row["Category"].lower()
-                or search_text in row["Amount"].lower()
-                or search_text in row["Description"].lower()
-            )
-
-            matches_type = (
-                selected_type == "All"
-                or row["Type"] == selected_type
-            )
-
-            if matches_search and matches_type:
+        if matches_search and matches_type:
                 
-                insert_row((
-                    row["ID"],
-                    row["Date"],
-                    row["Type"],
-                    row["Category"],
-                    row["Amount"],
-                    row["Description"]
-                ))
+            insert_row((
+                row["ID"],
+                row["Date"],
+                row["Type"],
+                row["Category"],
+                row["Amount"],
+                row["Description"]
+            ))
 
 
 
@@ -784,7 +832,7 @@ root.resizable(True, True)
 title_label = tk.Label(
     root,
     text="Personal Finance Dashboard",
-    font=("Arial", 18, "bold")
+    font=TITLE_FONT
 )
 title_label.pack(pady=10)
 
@@ -796,7 +844,7 @@ summary_frame.pack(pady=10)
 income_label = tk.Label(
     summary_frame,
     text="Total Income: ₹0.00",
-    font=("Arial", 12, "bold")
+    font=LABEL_FONT
 )
 
 income_label.grid(row=0, column=0, padx=20)
@@ -804,7 +852,7 @@ income_label.grid(row=0, column=0, padx=20)
 expense_label = tk.Label(
     summary_frame,
     text="Total Expenses: ₹0.00",
-    font=("Arial", 12, "bold")
+    font=LABEL_FONT
 )
 
 expense_label.grid(row=0, column=1, padx=20)
@@ -812,7 +860,7 @@ expense_label.grid(row=0, column=1, padx=20)
 balance_label = tk.Label(
     summary_frame,
     text="Current Balance: ₹0.00",
-    font=("Arial", 12, "bold")
+    font=LABEL_FONT
 )
 
 balance_label.grid(row=0, column=2, padx=20)
@@ -820,7 +868,7 @@ balance_label.grid(row=0, column=2, padx=20)
 budget_label = tk.Label(
     summary_frame,
     text="Monthly Budget: ₹0.00",
-    font=("Arial", 12, "bold")
+    font=LABEL_FONT
 )
 
 budget_label.grid(row=1, column=0, padx=20)
@@ -828,7 +876,7 @@ budget_label.grid(row=1, column=0, padx=20)
 status_label = tk.Label(
     summary_frame,
     text="Budget Status: Not Set",
-    font=("Arial", 12, "bold")
+    font=LABEL_FONT
 )
 
 status_label.grid(row=1, column=2, padx=20)
@@ -1025,6 +1073,15 @@ chart_button = tk.Button(
 )
 
 chart_button.grid(row=1, column=0, padx=5, pady=5)
+
+# Category-Wise Spending Report 
+category_report_button = tk.Button(
+    action_frame,
+    text="Category Report",
+    command=show_category_report
+)
+
+category_report_button.grid(row=2, column=0, padx=5, pady=5)
 
 # Monthly Trend Button
 trend_button = tk.Button(
