@@ -332,9 +332,19 @@ def update_summary():
             text=f"Total Expenses: ₹{total_expenses:.2f}"
         )
 
-        balance_label.config(
-            text=f"Current Balance: ₹{balance:.2f}"
-        )
+        if balance >= 0:
+
+            balance_label.config(
+                text=f"Current Balance: ₹{balance:.2f}",
+                fg="green"
+            )
+
+        else:
+
+            balance_label.config(
+                text=f"Current Deficit: ₹{abs(balance):.2f}",
+                fg="red"
+            )
 
         budget_label.config(
             text=f"Monthly Budget: ₹{budget:.2f}"
@@ -367,161 +377,6 @@ def update_summary():
             "CSV Error",
             f"Unable to calculate summary.\n\n{e}"
         )
-
-
-
-def show_expense_breakdown():
-
-    category_totals = {}
-
-    for row in read_transactions():
-
-        if row["Type"] == "Expense":
-
-            category = row["Category"]
-            amount = float(row["Amount"])
-
-            if category not in category_totals:
-                category_totals[category] = 0
-
-            category_totals[category] += amount
-
-    if not category_totals:
-
-        messagebox.showinfo(
-            "No Data",
-            "No expense data available."
-        )
-        return
-
-    plt.figure(figsize=(7, 7))
-
-    plt.pie(
-        category_totals.values(),
-        labels=category_totals.keys(),
-        autopct="%1.1f%%"
-    )
-
-    plt.title("Expense Breakdown by Category")
-
-    plt.show()
-
-
-
-def show_category_report():
-
-    category_totals = {}
-
-    for row in read_transactions():
-
-        if row["Type"] == "Expense":
-
-            category = row["Category"]
-
-            amount = float(row["Amount"])
-
-            category_totals[category] = (category_totals.get(category, 0) + amount  )
-
-    if not category_totals:
-
-        messagebox.showinfo(
-            "No Data",
-            "No expense data available."
-        )
-        return
-
-    report_window = tk.Toplevel(root)
-
-    report_window.title("Category-Wise Spending Report")
-
-    report_window.geometry("500x400")
-
-    report_window.resizable(False, False)
-
-    text = tk.Text(
-        report_window,
-        font=("Courier New", 11)
-    )
-
-    text.pack(fill="both", expand=True, padx=10, pady=10)
-
-    report = ""
-
-    report += f"{'Category':<25}{'Amount'}\n"
-
-    report += "-" * 40 + "\n"
-
-    total = 0
-
-    for category, amount in sorted(category_totals.items()):
-
-        report += (
-            f"{category:<25}"
-            f"₹{amount:,.2f}\n"
-        )
-
-        total += amount
-
-    report += "-" * 40 + "\n"
-
-    report += (
-        f"{'Total Expenses':<25}"
-        f"₹{total:,.2f}"
-    )
-
-    text.insert("1.0", report)
-
-    text.config(state="disabled")
-
-
-
-def show_monthly_trend():
-
-    monthly_expenses = {}
-
-    for row in read_transactions():
-
-        if row["Type"] == "Expense":
-
-            month = row["Date"][:7]      # YYYY-MM
-
-            amount = float(row["Amount"])
-
-            if month not in monthly_expenses:
-                monthly_expenses[month] = 0
-
-            monthly_expenses[month] += amount
-
-    if not monthly_expenses:
-
-        messagebox.showinfo(
-            "No Data",
-            "No expense data available."
-        )
-        return
-
-    months = sorted(monthly_expenses.keys())
-
-    expenses = [
-        monthly_expenses[month]
-        for month in months
-    ]
-
-    plt.figure(figsize=(8, 5))
-
-    plt.plot(
-        months,
-        expenses,
-        marker="o"
-    )
-
-    plt.title("Monthly Expense Trend")
-    plt.xlabel("Month")
-    plt.ylabel("Amount (₹)")
-
-    plt.grid(True)
-
-    plt.show()
 
 
 
@@ -569,64 +424,6 @@ def reset_filter():
     filter_combobox.current(0)
 
     apply_filter()
-
-
-
-def delete_transaction():
-
-    selected_item = tree.selection()
-    
-
-    if not selected_item:
-
-        messagebox.showwarning(
-            "No Selection",
-            "Please select a transaction to delete."
-        )
-        return
-
-    confirm = messagebox.askyesno(
-        "Confirm Delete",
-        f"Delete {len(selected_item)} selected transaction(s)?"
-    )
-
-    if not confirm:
-        return
-
-    transaction_ids = set()
-
-    for item in selected_item:
-
-        values = tree.item(item, "values")
-        transaction_ids.add(values[0])
-
-    rows = []
-
-
-    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
-
-        reader = csv.reader(file)
-
-        header = next(reader)
-
-        for row in reader:
-
-            if row[0] in transaction_ids:
-                continue
-
-            rows.append(row)
-
-    with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
-
-        writer = csv.writer(file)
-
-        writer.writerow(header)
-
-        writer.writerows(rows)
-
-    apply_filter()
-
-    update_summary()
 
 
 
@@ -685,6 +482,64 @@ def edit_transaction():
 
     description_entry.delete(0, tk.END)
     description_entry.insert(0, values[5])
+
+
+
+def delete_transaction():
+
+    selected_item = tree.selection()
+    
+
+    if not selected_item:
+
+        messagebox.showwarning(
+            "No Selection",
+            "Please select a transaction to delete."
+        )
+        return
+
+    confirm = messagebox.askyesno(
+        "Confirm Delete",
+        f"Delete {len(selected_item)} selected transaction(s)?"
+    )
+
+    if not confirm:
+        return
+
+    transaction_ids = set()
+
+    for item in selected_item:
+
+        values = tree.item(item, "values")
+        transaction_ids.add(values[0])
+
+    rows = []
+
+
+    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+
+        reader = csv.reader(file)
+
+        header = next(reader)
+
+        for row in reader:
+
+            if row[0] in transaction_ids:
+                continue
+
+            rows.append(row)
+
+    with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
+
+        writer = csv.writer(file)
+
+        writer.writerow(header)
+
+        writer.writerows(rows)
+
+    apply_filter()
+
+    update_summary()
 
 
 
@@ -789,6 +644,249 @@ def save_changes():
 
 
 
+def show_expense_breakdown():
+
+    category_totals = {}
+
+    for row in read_transactions():
+
+        if row["Type"] == "Expense":
+
+            category = row["Category"]
+            amount = float(row["Amount"])
+
+            if category not in category_totals:
+                category_totals[category] = 0
+
+            category_totals[category] += amount
+
+    if not category_totals:
+
+        messagebox.showinfo(
+            "No Data",
+            "No expense data available."
+        )
+        return
+
+    plt.figure(figsize=(7, 7))
+
+    plt.pie(
+        category_totals.values(),
+        labels=category_totals.keys(),
+        autopct="%1.1f%%"
+    )
+
+    plt.title("Expense Breakdown by Category")
+
+    plt.show()
+
+
+
+def show_category_report():
+
+    category_totals = {}
+
+    for row in read_transactions():
+
+        if row["Type"] == "Expense":
+
+            category = row["Category"]
+
+            amount = float(row["Amount"])
+
+            category_totals[category] = (category_totals.get(category, 0) + amount  )
+
+    if not category_totals:
+
+        messagebox.showinfo(
+            "No Data",
+            "No expense data available."
+        )
+        return
+
+    report_window = tk.Toplevel(root)
+
+    report_window.title("Category-Wise Spending Report")
+
+    report_window.geometry("500x400")
+
+    report_window.resizable(False, False)
+
+    text = tk.Text(report_window, font=("Courier New", 11))
+
+    text.pack(fill="both", expand=True, padx=10, pady=10)
+
+    report = ""
+
+    report += f"{'Category':<25}{'Amount'}\n"
+
+    report += "-" * 40 + "\n"
+
+    total = 0
+
+    for category, amount in sorted(category_totals.items()):
+
+        report += (
+            f"{category:<25}"
+            f"₹{amount:,.2f}\n"
+        )
+
+        total += amount
+
+    report += "-" * 40 + "\n"
+
+    report += (
+        f"{'Total Expenses':<25}"
+        f"₹{total:,.2f}"
+    )
+
+    text.insert("1.0", report)
+
+    text.config(state="disabled")
+
+
+
+def show_monthly_summary():
+
+    current_month = datetime.now().strftime("%Y-%m")
+
+    monthly_income = 0
+    monthly_expenses = 0
+
+    income_count = 0
+    expense_count = 0
+
+    for row in read_transactions():
+
+        if not row["Date"].startswith(current_month):
+            continue
+
+        amount = float(row["Amount"])
+
+        if row["Type"] == "Income":
+
+            monthly_income += amount
+            income_count += 1
+
+        else:
+
+            monthly_expenses += amount
+            expense_count += 1
+
+    net_savings = monthly_income - monthly_expenses
+
+    budget = load_budget()
+
+    remaining_budget = budget - monthly_expenses
+
+    report_window = tk.Toplevel(root)
+
+    report_window.title("Monthly Summary")
+
+    report_window.geometry("500x400")
+
+    report_window.resizable(False, False)
+
+    text = tk.Text(report_window, font=("Courier New", 11))
+
+    text.pack(fill="both", expand=True, padx=10, pady=10)
+
+    report = ""
+
+    report += f"Monthly Summary ({current_month})\n"
+
+    report += "=" * 45 + "\n\n"
+
+    report += f"{'Total Income':<25}₹{monthly_income:,.2f}\n"
+
+    report += f"{'Total Expenses':<25}₹{monthly_expenses:,.2f}\n"
+
+    report += f"{'Net Savings':<25}₹{net_savings:,.2f}\n"
+
+    report += "\n"
+
+    report += f"{'Income Transactions':<25}{income_count}\n"
+
+    report += f"{'Expense Transactions':<25}{expense_count}\n"
+
+    report += "\n"
+
+    report += f"{'Budget':<25}₹{budget:,.2f}\n"
+
+    if budget == 0:
+
+        report += f"{'Budget Status':<25}Not Set\n"
+
+    elif remaining_budget >= 0:
+
+        report += (
+            f"{'Budget Status':<25}"
+            f"₹{remaining_budget:,.2f} Remaining\n"
+        )
+
+    else:
+
+        report += (
+            f"{'Budget Status':<25}"
+            f"₹{abs(remaining_budget):,.2f} Exceeded\n"
+        )
+
+    text.insert("1.0", report)
+
+    text.config(state="disabled")
+
+
+
+def show_monthly_trend():
+
+    monthly_expenses = {}
+
+    for row in read_transactions():
+
+        if row["Type"] == "Expense":
+
+            month = row["Date"][:7]      # YYYY-MM
+
+            amount = float(row["Amount"])
+
+            if month not in monthly_expenses:
+                monthly_expenses[month] = 0
+
+            monthly_expenses[month] += amount
+
+    if not monthly_expenses:
+
+        messagebox.showinfo(
+            "No Data",
+            "No expense data available."
+        )
+        return
+
+    months = sorted(monthly_expenses.keys())
+
+    expenses = [
+        monthly_expenses[month]
+        for month in months
+    ]
+
+    plt.figure(figsize=(8, 5))
+
+    plt.plot(
+        months,
+        expenses,
+        marker="o"
+    )
+
+    plt.title("Monthly Expense Trend")
+    plt.xlabel("Month")
+    plt.ylabel("Amount (₹)")
+
+    plt.grid(True)
+
+    plt.show()
+
+
+
 def export_report():
 
     file_path = filedialog.asksaveasfilename(
@@ -802,10 +900,7 @@ def export_report():
 
     try:
 
-        shutil.copy(
-            CSV_FILE,
-            file_path
-        )
+        shutil.copy(CSV_FILE, file_path)
 
         messagebox.showinfo(
             "Success",
@@ -976,7 +1071,6 @@ tk.Label(input_frame, text="Description").grid(row=4, column=0, padx=5, pady=5)
 description_entry = tk.Entry(input_frame, width=23)
 description_entry.grid(row=4, column=1, padx=5, pady=5)
 
-# Bind category event
 category_combobox.bind(
     "<<ComboboxSelected>>",
     handle_category_change
@@ -1082,6 +1176,15 @@ category_report_button = tk.Button(
 )
 
 category_report_button.grid(row=2, column=0, padx=5, pady=5)
+
+# Monthly Summary Button
+monthly_summary_button = tk.Button(
+    action_frame,
+    text="Monthly Summary",
+    command=show_monthly_summary
+)
+
+monthly_summary_button.grid(row=2, column=1, padx=5, pady=5)
 
 # Monthly Trend Button
 trend_button = tk.Button(
