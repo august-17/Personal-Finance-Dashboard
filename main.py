@@ -19,8 +19,21 @@ MAX_AMOUNT = 10000000
 
 LABEL_FONT = ("Arial", 12, "bold")
 TITLE_FONT = ("Arial", 18, "bold")
+REPORT_FONT = ("Courier New", 11)
+
+WINDOW_WIDTH = 1300
+WINDOW_HEIGHT = 850
+
+REPORT_WIDTH = 500
+REPORT_HEIGHT = 400
+
+EVEN_ROW_COLOR = "#f5f5f5"
+ODD_ROW_COLOR = "white"
 
 editing_transaction_id = None
+
+sort_reverse = {"Date": False}
+sort_column = "Date"
 
 
 
@@ -184,27 +197,9 @@ def get_next_id():
 
 
 
-def add_transaction():
-
-    transaction_type = type_combobox.get()
-
-    category = category_combobox.get()
-
-    if category == "Other":
-
-        category = custom_category_entry.get().strip()
-
-        if not category:
-
-            messagebox.showerror(
-                "Error",
-                "Please enter a custom category."
-            )
-            return
+def validate_amount():
 
     amount = amount_entry.get().strip()
-
-    description = description_entry.get().strip()
 
     if not amount:
 
@@ -212,9 +207,11 @@ def add_transaction():
             "Error",
             "Please enter an amount."
         )
-        return
+
+        return None
 
     try:
+
         amount = float(amount)
 
     except ValueError:
@@ -223,7 +220,8 @@ def add_transaction():
             "Error",
             "Amount must be a number."
         )
-        return
+
+        return None
 
     if amount < MIN_AMOUNT:
 
@@ -231,8 +229,8 @@ def add_transaction():
             "Error",
             f"Amount must be at least ₹{MIN_AMOUNT}."
         )
-        return
 
+        return None
 
     if amount > MAX_AMOUNT:
 
@@ -240,7 +238,50 @@ def add_transaction():
             "Error",
             f"Amount cannot exceed ₹{MAX_AMOUNT:,}."
         )
+
+        return None
+
+    return amount
+
+
+
+def get_category():
+
+    category = category_combobox.get()
+
+    if category != "Other":
+        return category
+
+    category = custom_category_entry.get().strip()
+
+    if not category:
+
+        messagebox.showerror(
+            "Error",
+            "Please enter a custom category."
+        )
+
+        return None
+
+    return category
+
+
+
+def add_transaction():
+
+    transaction_type = type_combobox.get()
+
+    category = get_category()
+
+    if category is None:
         return
+
+    amount = validate_amount()
+
+    if amount is None:
+        return
+    
+    description = description_entry.get().strip()
     
     transaction_id = get_next_id()
 
@@ -276,15 +317,22 @@ def load_transactions():
 
     try:
 
-        with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
+        transactions = read_transactions()
 
-            reader = csv.reader(file)
+        transactions.sort(
+            key=lambda row: row["Date"]
+        )
 
-            next(reader, None)
+        for row in transactions:
 
-            for row in reader:
-
-                insert_row(row)
+            insert_row((
+                row["ID"],
+                row["Date"],
+                row["Type"],
+                row["Category"],
+                row["Amount"],
+                row["Description"]
+            ))
 
     except Exception as e:
 
@@ -325,29 +373,29 @@ def update_summary():
         remaining_budget = budget - monthly_expenses
 
         income_label.config(
-            text=f"Total Income: ₹{total_income:.2f}"
+            text=f"Total Income: ₹{total_income:,.2f}"
         )
 
         expense_label.config(
-            text=f"Total Expenses: ₹{total_expenses:.2f}"
+            text=f"Total Expenses: ₹{total_expenses:,.2f}"
         )
 
         if balance >= 0:
 
             balance_label.config(
-                text=f"Current Balance: ₹{balance:.2f}",
+                text=f"Current Balance: ₹{balance:,.2f}",
                 fg="green"
             )
 
         else:
 
             balance_label.config(
-                text=f"Current Deficit: ₹{abs(balance):.2f}",
+                text=f"Current Deficit: ₹{abs(balance):,.2f}",
                 fg="red"
             )
 
         budget_label.config(
-            text=f"Monthly Budget: ₹{budget:.2f}"
+            text=f"Monthly Budget: ₹{budget:,.2f}"
         )
 
         if budget == 0:
@@ -360,14 +408,14 @@ def update_summary():
         elif remaining_budget >= 0:
 
             status_label.config(
-                text=f"Budget Status: ₹{remaining_budget:.2f} Remaining",
+                text=f"Budget Status: ₹{remaining_budget:,.2f} Remaining",
                 fg="green"
             )
 
         else:
 
             status_label.config(
-                text=f"Budget Status: ₹{abs(remaining_budget):.2f} Exceeded",
+                text=f"Budget Status: ₹{abs(remaining_budget):,.2f} Exceeded",
                 fg="red"
             )
 
@@ -415,6 +463,12 @@ def apply_filter():
                 row["Description"]
             ))
 
+    if sort_column is not None:
+        sort_treeview(
+            sort_column,
+            toggle=False
+        )
+
 
 
 def reset_filter():
@@ -424,6 +478,102 @@ def reset_filter():
     filter_combobox.current(0)
 
     apply_filter()
+
+
+
+def update_sort_headers():
+
+    sortable_columns = ("Date", "Amount", "Category")
+
+    for column in columns:
+
+        heading = column
+
+        if column == sort_column:
+
+            if sort_reverse.get(column, False):
+
+                heading = f"{column} ▼"
+
+            else:
+
+                heading = f"{column} ▲"
+
+        if column in sortable_columns:
+
+            tree.heading(
+                column,
+                text=heading,
+                command=lambda c=column: sort_treeview(c)
+            )
+
+        else:
+
+            tree.heading(
+                column,
+                text=heading
+            )
+
+
+
+def sort_treeview(column, toggle=True):
+
+    global sort_column
+
+    if toggle:
+
+        if sort_column == column:
+
+            sort_reverse[column] = not sort_reverse.get(column, False)
+
+        else:
+
+            sort_column = column
+
+            sort_reverse.setdefault(column, False)
+
+    else:
+
+        sort_column = column
+
+    data = []
+
+    for item in tree.get_children():
+
+        values = tree.item(item)["values"]
+
+        data.append((values, item))
+
+    if column == "Amount":
+
+        data.sort(
+            key=lambda x: float(x[0][4]),
+            reverse=sort_reverse.get(column, False)
+        )
+
+    elif column == "Date":
+
+        data.sort(
+            key=lambda x: datetime.strptime(x[0][1], "%Y-%m-%d"),
+            reverse=sort_reverse.get(column, False)
+        )
+
+    elif column == "Category":
+
+        data.sort(
+            key=lambda x: x[0][3].lower(),
+            reverse=sort_reverse.get(column, False)
+        )
+
+    else:
+
+        return
+
+    for index, (_, item) in enumerate(data):
+
+        tree.move(item, "", index)
+
+    update_sort_headers()
 
 
 
@@ -559,51 +709,17 @@ def save_changes():
 
     date = date_entry.get()
 
-    category = category_combobox.get()
+    category = get_category()
 
-    if category == "Other":
+    if category is None:
+        return
 
-        category = custom_category_entry.get().strip()
+    amount = validate_amount()
 
-        if not category:
-
-            messagebox.showerror(
-                "Error",
-                "Please enter a custom category."
-            )
-            return
-
-    amount = amount_entry.get().strip()
-
-    description = description_entry.get().strip()
-
-    try:
-        amount = float(amount)
-
-    except ValueError:
-
-        messagebox.showerror(
-            "Error",
-            "Amount must be a number."
-        )
+    if amount is None:
         return
     
-    if amount < MIN_AMOUNT:
-
-        messagebox.showerror(
-            "Error",
-            f"Amount must be at least ₹{MIN_AMOUNT}."
-        )
-        return
-
-
-    if amount > MAX_AMOUNT:
-
-        messagebox.showerror(
-            "Error",
-            f"Amount cannot exceed ₹{MAX_AMOUNT:,}."
-        )
-        return
+    description = description_entry.get().strip()
     
     rows = []
 
@@ -708,11 +824,11 @@ def show_category_report():
 
     report_window.title("Category-Wise Spending Report")
 
-    report_window.geometry("500x400")
+    report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
 
     report_window.resizable(False, False)
 
-    text = tk.Text(report_window, font=("Courier New", 11))
+    text = tk.Text(report_window, font=REPORT_FONT)
 
     text.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -783,11 +899,11 @@ def show_monthly_summary():
 
     report_window.title("Monthly Summary")
 
-    report_window.geometry("500x400")
+    report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
 
     report_window.resizable(False, False)
 
-    text = tk.Text(report_window, font=("Courier New", 11))
+    text = tk.Text(report_window, font=REPORT_FONT)
 
     text.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -920,7 +1036,7 @@ create_csv_file()
 
 root = tk.Tk()
 root.title("Personal Finance Dashboard")
-root.geometry("1300x850")
+root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
 root.resizable(True, True)
 
 # Title
@@ -1221,7 +1337,20 @@ tree = ttk.Treeview(
 
 for column in columns:
 
-    tree.heading(column, text=column)
+    if column in ("Date", "Amount", "Category"):
+
+        tree.heading(
+            column,
+            text=column,
+            command=lambda c=column: sort_treeview(c)
+        )
+
+    else:
+
+        tree.heading(
+            column,
+            text=column
+        )
 
     if column == "ID":
 
@@ -1233,20 +1362,22 @@ for column in columns:
 
     elif column == "Amount":
 
-        tree.column(column, width=120, anchor="center")
+        tree.column(column, width=120, anchor="e")
 
     else:
 
         tree.column(column, width=140, anchor="center")
 
+update_sort_headers()
+
 tree.tag_configure(
     "evenrow",
-    background="#f5f5f5"
+    background=EVEN_ROW_COLOR
 )
 
 tree.tag_configure(
     "oddrow",
-    background="white"
+    background=ODD_ROW_COLOR
 )
 
 # Vertical Scrollbar
