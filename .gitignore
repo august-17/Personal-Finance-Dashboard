@@ -3,3 +3,4 @@ __pycache__/
 
 transactions.csv
 budget.txt
+category_budget.json

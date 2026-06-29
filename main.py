@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from datetime import datetime
 from tkcalendar import DateEntry
 import csv
+import json
 import os
 from tkinter import filedialog
 import shutil
@@ -14,6 +15,8 @@ CSV_FILE = os.path.join(os.path.dirname(__file__), "transactions.csv")
 
 BUDGET_FILE = os.path.join(os.path.dirname(__file__), "budget.txt")
 
+CATEGORY_BUDGET_FILE = os.path.join(os.path.dirname(__file__), "category_budget.json")
+
 MIN_AMOUNT = 1
 MAX_AMOUNT = 10000000
 
@@ -24,8 +27,11 @@ REPORT_FONT = ("Courier New", 11)
 WINDOW_WIDTH = 1300
 WINDOW_HEIGHT = 850
 
-REPORT_WIDTH = 500
+REPORT_WIDTH = 700
 REPORT_HEIGHT = 400
+
+BUDGET_WIDTH = 350
+BUDGET_HEIGHT = 420
 
 EVEN_ROW_COLOR = "#f5f5f5"
 ODD_ROW_COLOR = "white"
@@ -104,6 +110,129 @@ def load_budget():
     except ValueError:
 
         return 0
+
+
+def load_category_budgets():
+
+    if not os.path.exists(CATEGORY_BUDGET_FILE):
+
+        return {}
+
+    try:
+
+        with open(CATEGORY_BUDGET_FILE, "r", encoding="utf-8") as file:
+
+            return json.load(file)
+
+    except:
+
+        return {}
+
+
+
+def save_category_budgets(category_budgets):
+
+    with open(CATEGORY_BUDGET_FILE, "w", encoding="utf-8") as file:
+
+        json.dump(category_budgets, file, indent=4)
+
+
+
+def open_category_budget_window():
+
+    budget_window = tk.Toplevel(root)
+
+    budget_window.title("Category Budgets")
+
+    budget_window.geometry(f"{BUDGET_WIDTH}x{BUDGET_HEIGHT}")
+
+    saved_budgets = load_category_budgets()
+
+    category_entries = {}
+
+    for index, category in enumerate(CATEGORIES):
+
+        tk.Label(budget_window, text=category).grid( row=index, column=0, padx=10, pady=5, sticky="w")
+
+        entry = tk.Entry( budget_window, width=15)
+
+        entry.grid( row=index, column=1, padx=10, pady=5)
+
+        if category in saved_budgets:
+
+            entry.insert(
+                0,
+                str(saved_budgets[category])
+            )
+
+        category_entries[category] = entry
+
+    save_button = tk.Button(
+        budget_window,
+        text="Save Budgets",
+        command=lambda: save_category_budget_entries(
+            category_entries,
+            budget_window
+        )
+    )
+
+    save_button.grid(row=len(CATEGORIES), column=0, columnspan=2, pady=15)
+
+
+
+def save_category_budget_entries(category_entries, budget_window):
+
+    category_budgets = {}
+
+    for category, entry in category_entries.items():
+
+        budget = entry.get().strip()
+
+        if not budget:
+            continue
+
+        try:
+
+            budget = float(budget)
+
+        except ValueError:
+
+            messagebox.showerror(
+                "Error",
+                f"Budget for {category} must be a number."
+            )
+
+            return
+
+        if budget <= 0:
+
+            messagebox.showerror(
+                "Error",
+                f"Budget for {category} must be greater than zero."
+            )
+
+            return
+
+        if budget > MAX_AMOUNT:
+
+            messagebox.showerror(
+                "Error",
+                f"Budget for {category} cannot exceed ₹{MAX_AMOUNT:,}."
+            )
+
+            return
+
+        category_budgets[category] = budget
+
+    save_category_budgets(category_budgets)
+
+    messagebox.showinfo(
+        "Success",
+        "Category budgets saved successfully."
+    )
+
+    budget_window.destroy()
+
 
 
 def save_budget():
@@ -953,6 +1082,96 @@ def show_monthly_summary():
 
 
 
+def show_category_budget_status():
+
+    category_budgets = load_category_budgets()
+
+    if not category_budgets:
+
+        messagebox.showinfo(
+            "No Budgets",
+            "No category budgets have been set."
+        )
+
+        return
+
+    category_spending = {}
+
+    for row in read_transactions():
+
+        if row["Type"] == "Expense":
+
+            category = row["Category"]
+
+            amount = float(row["Amount"])
+
+            category_spending[category] = (
+                category_spending.get(category, 0) + amount
+            )
+
+    report_window = tk.Toplevel(root)
+
+    report_window.title("Category Budget Status")
+
+    report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
+
+    report = (
+        f"{'Category':<20}"
+        f"{'Budget':>15}"
+        f"{'Spent':>15}"
+        f"{'Status':>25}\n"
+    )
+
+    report += "-" * 75 + "\n\n"
+
+    for category in CATEGORIES:
+
+        budget = category_budgets.get(category)
+
+        spent = category_spending.get(category, 0)
+
+        if budget is None:
+
+            budget_text = "Not Set"
+            status = "Not Set"
+
+        else:
+
+            budget_text = f"₹{budget:,.2f}"
+
+            if spent < budget:
+
+                status = f"₹{budget - spent:,.2f} Remaining"
+
+            elif spent > budget:
+
+                status = f"₹{spent - budget:,.2f} Exceeded"
+
+            else:
+
+                status = "Limit Reached"
+
+        report += (
+            f"{category:<20}"
+            f"{budget_text:>15}"
+            f"₹{spent:>14,.2f}"
+            f"{status:>25}\n"
+        )
+
+    text = tk.Text(
+        report_window,
+        wrap="none",
+        font=REPORT_FONT
+    )
+
+    text.pack(fill="both", expand=True)
+
+    text.insert(tk.END, report)
+
+    text.config(state="disabled")
+
+
+
 def show_monthly_trend():
 
     monthly_expenses = {}
@@ -1125,6 +1344,15 @@ reset_budget_button = tk.Button(
 )
 
 reset_budget_button.grid(row=0, column=3, padx=5)
+
+# Category Budgets Button
+category_budget_button = tk.Button(
+    budget_frame,
+    text="Category Budgets",
+    command=open_category_budget_window
+)
+
+category_budget_button.grid(row=0, column=4, padx=5)
 
 # Input Frame
 input_frame = tk.Frame(root)
@@ -1301,6 +1529,14 @@ monthly_summary_button = tk.Button(
 )
 
 monthly_summary_button.grid(row=2, column=1, padx=5, pady=5)
+
+category_budget_status_button = tk.Button(
+    action_frame,
+    text="Category Budget Status",
+    command=show_category_budget_status
+)
+
+category_budget_status_button.grid(row=2, column=0, padx=5, pady=5)
 
 # Monthly Trend Button
 trend_button = tk.Button(
