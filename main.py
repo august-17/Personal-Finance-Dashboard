@@ -18,6 +18,8 @@ CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Education", "Healthcare", 
 
 EXPORT_FORMATS = ["CSV", "PDF", "Excel"]
 
+CSV_HEADERS = ["ID", "Date", "Type", "Category", "Amount", "Description"]
+
 CSV_FILE = os.path.join(os.path.dirname(__file__), "transactions.csv")
 
 BUDGET_FILE = os.path.join(os.path.dirname(__file__), "budget.txt")
@@ -50,6 +52,8 @@ editing_transaction_id = None
 
 sort_reverse = {"Date": False}
 sort_column = "Date"
+
+last_deleted_transactions = []
 
 
 
@@ -95,7 +99,7 @@ def create_csv_file():
 
             writer = csv.writer(file)
 
-            writer.writerow(["ID", "Date", "Type", "Category", "Amount", "Description"])
+            writer.writerow(CSV_HEADERS)
 
 
 
@@ -716,6 +720,109 @@ def sort_treeview(column, toggle=True):
 
 
 
+def delete_transaction():
+
+    global last_deleted_transactions
+
+    selected_item = tree.selection()
+
+    if not selected_item:
+
+        messagebox.showwarning(
+            "No Selection",
+            "Please select a transaction to delete."
+        )
+        return
+
+    confirm = messagebox.askyesno(
+        "Confirm Delete",
+        f"Delete {len(selected_item)} selected transaction(s)?"
+    )
+
+    if not confirm:
+        return
+
+    transaction_ids = set()
+
+    last_deleted_transactions.clear()
+
+    for item in selected_item:
+
+        values = tree.item(item, "values")
+        transaction_ids.add(values[0])
+
+    transactions = read_transactions()
+
+    updated_transactions = []
+
+    for index, transaction in enumerate(transactions):
+
+        if transaction["ID"] in transaction_ids:
+                
+            last_deleted_transactions.append((index, transaction.copy()))
+                
+            continue
+
+        updated_transactions.append(transaction)
+
+    with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
+
+        writer = csv.DictWriter(file, fieldnames=CSV_HEADERS)
+
+        writer.writeheader()
+
+        writer.writerows(updated_transactions)
+
+    apply_filter()
+
+    update_summary()
+
+    undo_delete_button.config(state="normal")
+
+
+
+def undo_delete():
+
+    global last_deleted_transactions
+
+    if not last_deleted_transactions:
+
+        messagebox.showinfo(
+            "Undo Delete",
+            "Nothing to undo."
+        )
+
+        return
+    
+    transactions = read_transactions()
+
+    for index, transaction in sorted(last_deleted_transactions, key=lambda x: x[0]):
+
+        transactions.insert(index, transaction)
+
+    with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
+
+        writer = csv.DictWriter(file, fieldnames=CSV_HEADERS)
+
+        writer.writeheader()
+
+        writer.writerows(transactions)
+
+    last_deleted_transactions.clear()
+
+    undo_delete_button.config(state="disabled")
+
+    apply_filter()
+
+    update_summary()
+
+    messagebox.showinfo(
+        "Undo Delete",
+        "Deleted transaction(s) restored successfully."
+    )
+
+
+
 def edit_transaction():
 
     global editing_transaction_id
@@ -771,64 +878,6 @@ def edit_transaction():
 
     description_entry.delete(0, tk.END)
     description_entry.insert(0, values[5])
-
-
-
-def delete_transaction():
-
-    selected_item = tree.selection()
-    
-
-    if not selected_item:
-
-        messagebox.showwarning(
-            "No Selection",
-            "Please select a transaction to delete."
-        )
-        return
-
-    confirm = messagebox.askyesno(
-        "Confirm Delete",
-        f"Delete {len(selected_item)} selected transaction(s)?"
-    )
-
-    if not confirm:
-        return
-
-    transaction_ids = set()
-
-    for item in selected_item:
-
-        values = tree.item(item, "values")
-        transaction_ids.add(values[0])
-
-    rows = []
-
-
-    with open(CSV_FILE, "r", newline="", encoding="utf-8") as file:
-
-        reader = csv.reader(file)
-
-        header = next(reader)
-
-        for row in reader:
-
-            if row[0] in transaction_ids:
-                continue
-
-            rows.append(row)
-
-    with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
-
-        writer = csv.writer(file)
-
-        writer.writerow(header)
-
-        writer.writerows(rows)
-
-    apply_filter()
-
-    update_summary()
 
 
 
@@ -1339,7 +1388,7 @@ def export_pdf():
     
     pdf = SimpleDocTemplate(file_path)
     
-    table_data = [["ID", "Date", "Type", "Category", "Amount", "Description"]]
+    table_data = [CSV_HEADERS]
 
     for row in read_transactions():
 
@@ -1413,7 +1462,7 @@ def export_excel():
 
         worksheet.title = "Financial Report"
 
-        worksheet.append(["ID", "Date", "Type", "Category", "Amount", "Description"])
+        worksheet.append(CSV_HEADERS)
 
         for cell in worksheet[1]:
 
@@ -1724,6 +1773,16 @@ delete_button = tk.Button(
 
 delete_button.grid(row=0, column=2, padx=5, pady=5)
 
+# Undo Delete Button
+undo_delete_button = tk.Button(
+    action_frame,
+    text="Undo Delete",
+    command=undo_delete,
+    state="disabled"
+)
+
+undo_delete_button.grid(row=0, column=3, padx=5, pady=5)
+
 # Expense Breakdown Button
 chart_button = tk.Button(
     action_frame,
@@ -1751,13 +1810,14 @@ monthly_summary_button = tk.Button(
 
 monthly_summary_button.grid(row=2, column=1, padx=5, pady=5)
 
+# Category Budget Status Button
 category_budget_status_button = tk.Button(
     action_frame,
     text="Category Budget Status",
     command=show_category_budget_status
 )
 
-category_budget_status_button.grid(row=2, column=0, padx=5, pady=5)
+category_budget_status_button.grid(row=2, column=2, padx=5, pady=5)
 
 # Monthly Trend Button
 trend_button = tk.Button(
