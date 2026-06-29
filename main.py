@@ -2,6 +2,11 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
 from tkcalendar import DateEntry
+from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle)
+from reportlab.lib import colors
+from openpyxl import Workbook
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
 import csv
 import json
 import os
@@ -10,6 +15,8 @@ import shutil
 import matplotlib.pyplot as plt
 
 CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Education", "Healthcare", "Entertainment", "Other"]
+
+EXPORT_FORMATS = ["CSV", "PDF", "Excel"]
 
 CSV_FILE = os.path.join(os.path.dirname(__file__), "transactions.csv")
 
@@ -32,6 +39,9 @@ REPORT_HEIGHT = 450
 
 BUDGET_WIDTH = 400
 BUDGET_HEIGHT = 450
+
+EXPORT_WIDTH = 300
+EXPORT_HEIGHT = 150
 
 EVEN_ROW_COLOR = "#f5f5f5"
 ODD_ROW_COLOR = "white"
@@ -1230,7 +1240,63 @@ def show_monthly_trend():
 
 
 
+def export_selected_format(format_combobox, export_window):
+
+    selected_format = format_combobox.get()
+
+    export_window.destroy()
+
+    if selected_format == "CSV":
+
+        export_csv()
+
+    elif selected_format == "PDF":
+
+        export_pdf()
+
+    else:
+
+        export_excel()
+
+
+
 def export_report():
+
+    export_window = tk.Toplevel(root)
+
+    export_window.title("Export Financial Report")
+
+    export_window.geometry(f"{EXPORT_WIDTH}x{EXPORT_HEIGHT}")
+
+    export_window.resizable(False, False)
+
+    tk.Label(export_window, text="Select Export Format").pack(pady=(20, 10))
+
+    format_combobox = ttk.Combobox(
+        export_window,
+        values=EXPORT_FORMATS,
+        state="readonly",
+        width=20
+    )
+
+    format_combobox.pack()
+
+    format_combobox.current(0)
+
+    export_button = tk.Button(
+        export_window,
+        text="Export",
+        command=lambda: export_selected_format(
+            format_combobox,
+            export_window
+        )
+    )
+
+    export_button.pack(pady=20)
+
+
+
+def export_csv():
 
     file_path = filedialog.asksaveasfilename(
         defaultextension=".csv",
@@ -1244,6 +1310,153 @@ def export_report():
     try:
 
         shutil.copy(CSV_FILE, file_path)
+
+        messagebox.showinfo(
+            "Success",
+            "Financial report exported successfully."
+        )
+
+    except Exception as e:
+
+        messagebox.showerror(
+            "Export Error",
+            f"Unable to export report.\n\n{e}"
+        )
+
+
+
+
+def export_pdf():
+
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".pdf",
+        filetypes=[("PDF Files", "*.pdf")],
+        title="Save Financial Report"
+    )
+
+    if not file_path:
+        return
+    
+    pdf = SimpleDocTemplate(file_path)
+    
+    table_data = [["ID", "Date", "Type", "Category", "Amount", "Description"]]
+
+    for row in read_transactions():
+
+        table_data.append([
+            row["ID"],
+            row["Date"],
+            row["Type"],
+            row["Category"],
+            f"₹{float(row['Amount']):,.2f}",
+            row["Description"]
+        ])
+
+    table = Table(table_data)
+
+    table.setStyle(
+
+        TableStyle([
+
+            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+
+            ("GRID", (0, 0), (-1, -1), 1, colors.black),
+
+            ("BACKGROUND", (0, 1), (-1, -1), colors.beige)
+
+        ])
+
+    )
+
+    pdf.build([table])
+
+    try:
+
+        messagebox.showinfo(
+            "Success",
+            "Financial report exported successfully."
+        )
+
+    except Exception as e:
+
+        messagebox.showerror(
+            "Export Error",
+            f"Unable to export report.\n\n{e}"
+        )
+
+
+
+def export_excel():
+
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".xlsx",
+        filetypes=[("Excel Files", "*.xlsx")],
+        title="Save Financial Report"
+    )
+
+    if not file_path:
+        return
+
+    try:
+
+        workbook = Workbook()
+
+        worksheet = workbook.active
+
+        worksheet.title = "Financial Report"
+
+        worksheet.append(["ID", "Date", "Type", "Category", "Amount", "Description"])
+
+        for cell in worksheet[1]:
+
+            cell.font = Font(bold=True)
+
+        for row in read_transactions():
+
+            worksheet.append([
+                row["ID"],
+                row["Date"],
+                row["Type"],
+                row["Category"],
+                float(row["Amount"]),
+                row["Description"]
+            ])
+
+        # Format Amount Column
+        for cell in worksheet["E"][1:]:
+
+            cell.number_format = '#,##0.00'
+
+        # Auto-fit Columns
+        for column_cells in worksheet.columns:
+
+            max_length = 0
+
+            column = get_column_letter(column_cells[0].column)
+
+            for cell in column_cells:
+
+                try:
+
+                    if len(str(cell.value)) > max_length:
+
+                        max_length = len(str(cell.value))
+
+                except:
+
+                    pass
+
+            worksheet.column_dimensions[column].width = max_length + 2
+        
+        workbook.save(file_path)
 
         messagebox.showinfo(
             "Success",
