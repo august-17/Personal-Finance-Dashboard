@@ -27,11 +27,11 @@ REPORT_FONT = ("Courier New", 11)
 WINDOW_WIDTH = 1300
 WINDOW_HEIGHT = 850
 
-REPORT_WIDTH = 700
-REPORT_HEIGHT = 400
+REPORT_WIDTH = 850
+REPORT_HEIGHT = 450
 
-BUDGET_WIDTH = 350
-BUDGET_HEIGHT = 420
+BUDGET_WIDTH = 400
+BUDGET_HEIGHT = 450
 
 EVEN_ROW_COLOR = "#f5f5f5"
 ODD_ROW_COLOR = "white"
@@ -152,11 +152,11 @@ def open_category_budget_window():
 
     for index, category in enumerate(CATEGORIES):
 
-        tk.Label(budget_window, text=category).grid( row=index, column=0, padx=10, pady=5, sticky="w")
+        tk.Label(budget_window, text=category).grid(row=index, column=0, padx=(15, 10), pady=6, sticky="w")
 
         entry = tk.Entry( budget_window, width=15)
 
-        entry.grid( row=index, column=1, padx=10, pady=5)
+        entry.grid(row=index, column=1, padx=(15, 10), pady=6)
 
         if category in saved_budgets:
 
@@ -176,7 +176,7 @@ def open_category_budget_window():
         )
     )
 
-    save_button.grid(row=len(CATEGORIES), column=0, columnspan=2, pady=15)
+    save_button.grid(row=len(CATEGORIES), column=0, columnspan=2, padx=10, pady=15)
 
 
 
@@ -1151,10 +1151,18 @@ def show_category_budget_status():
 
                 status = "Limit Reached"
 
+        if spent == 0:
+
+            spent_text = "No Spending"
+
+        else:
+
+            spent_text = f"₹{spent:,.2f}"
+
         report += (
             f"{category:<20}"
             f"{budget_text:>15}"
-            f"₹{spent:>14,.2f}"
+            f"{spent_text:>15}"
             f"{status:>25}\n"
         )
 
