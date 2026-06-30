@@ -1,108 +1,174 @@
 # Personal Finance Dashboard
 
-A desktop-based Personal Finance Dashboard built with Python and Tkinter that helps users manage income, expenses, budgets, and financial reports through an intuitive graphical interface. The application provides transaction management, financial analytics, budget tracking, data visualization, and reporting features.
+A desktop-based personal finance management application built with **Python** and **Tkinter** that enables users to efficiently track income and expenses, manage budgets, visualize spending patterns, and generate financial reports.
+
+The application provides an intuitive graphical interface with advanced budgeting tools, reporting capabilities, data visualization, and export functionality to help users monitor and analyze their financial activities.
 
 ---
 
 ## Features
 
 ### Transaction Management
+
 - Add income and expense transactions
 - Edit existing transactions
-- Delete single or multiple transactions
+- Delete multiple transactions
+- Undo deleted transactions
 - Automatic transaction ID generation
 - Calendar-based date selection
-- Custom transaction categories using "Other"
-- Input validation for amounts and budgets
-- Automatic transaction table refresh after updates
+- Support for custom expense categories
+- Automatic CSV-based data storage
 
-### Financial Tracking
-- Real-time income tracking
-- Real-time expense tracking
-- Current balance calculation
-- Monthly budget management
-- Budget status monitoring
-- Budget exceeded alerts
-- Budget reset functionality
-- Monthly expense monitoring
+### Dashboard Overview
+
+- Total Income
+- Total Expenses
+- Current Balance / Deficit
+- Monthly Budget
+- Remaining or Exceeded Budget Status
+
+### Budget Management
+
+#### Monthly Budget
+
+- Set monthly spending limits
+- Reset monthly budget
+- Automatic budget tracking
+- Warning before exceeding the monthly budget
+
+#### Category Budgets
+
+- Individual budgets for each category
+- Support for dynamically created custom categories
+- Category-specific overspending warnings
+- Reset individual category budgets
 
 ### Search & Filtering
-- Search transactions by:
-  - Date
-  - Type
-  - Category
-  - Amount
-  - Description
-- Filter by:
-  - All Transactions
-  - Income
-  - Expense
+
+- Real-time transaction search
+- Filter transactions by type
 - Reset filters instantly
+- Optimized debounced searching for improved responsiveness
 
-### Reports & Analytics
-- Expense Breakdown Pie Chart
-- Monthly Expense Trend Graph
-- Category-Wise Spending Report
-- CSV Financial Report Export
+### Reports
 
-### Data Management
-- CSV-based transaction storage
-- Persistent budget storage
-- Automatic data loading on startup
-- Multi-transaction deletion support
+Generate reports for any selected month:
 
-### User Interface
-- Interactive transaction table
-- Responsive Tkinter GUI
-- Organized action controls
-- Calendar date picker
-- Simple and user-friendly design
+- Monthly Financial Summary
+- Category-wise Spending Report
+- Category Budget Status Report
+
+### Data Visualization
+
+#### Expense Breakdown
+
+- Category-wise pie chart
+- Automatic grouping of very small categories into **Others**
+- Percentage-based expense distribution
+
+#### Monthly Expense Trend
+
+- Line chart showing monthly expenses
+- Continuous timeline across months
+- Automatic handling of months without transactions
+
+### Export Options
+
+Export monthly financial reports in:
+
+- CSV
+- PDF
+- Microsoft Excel (.xlsx)
+
+Generated reports include professionally formatted tables suitable for sharing and record keeping.
+
+### Sorting
+
+Sortable transaction table by:
+
+- Date
+- Amount
+- Category
+
+Supports both ascending and descending order.
+
+### Data Protection
+
+- Automatic backup before editing, deleting, or adding transactions
+- Local data storage
+- Undo functionality for deleted transactions
+
+### Input Validation
+
+Comprehensive validation for:
+
+- Amount limits
+- Numeric inputs
+- Description length
+- Custom category names
+- Invalid characters
+- Empty fields
 
 ---
 
-## Technologies Used
+## Technology Stack
 
-- Python
-- Tkinter
-- ttk
-- tkcalendar
-- Matplotlib
-- CSV
-- OS Module
-- Shutil
+| Category | Technology |
+|----------|------------|
+| Language | Python 3 |
+| GUI Framework | Tkinter |
+| Calendar Widget | tkcalendar |
+| Charts | Matplotlib |
+| PDF Reports | ReportLab |
+| Excel Reports | OpenPyXL |
+| Data Storage | CSV, JSON |
 
 ---
 
 ## Project Structure
 
-```text
+```
 Personal-Finance-Dashboard/
 │
 ├── main.py
 ├── transactions.csv
+├── backup_transactions.csv
 ├── budget.txt
+├── category_budget.json
+├── requirements.txt
 ├── README.md
-└── requirements.txt
+└── screenshots/
 ```
 
 ---
 
 ## Installation
 
-### Clone Repository
+Clone the repository:
 
 ```bash
-git clone https://github.com/august-17/personal-finance-dashboard.git
-cd personal-finance-dashboard
+git clone https://github.com/august-17/Personal-Finance-Dashboard.git
 ```
 
-### Install Dependencies
+Navigate to the project directory:
 
 ```bash
-pip install tkcalendar matplotlib
+cd Personal-Finance-Dashboard
 ```
 
-### Run Application
+Install the required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Or install manually:
+
+```bash
+pip install tkcalendar matplotlib reportlab openpyxl
+```
+
+Run the application:
 
 ```bash
 python main.py
@@ -110,122 +176,43 @@ python main.py
 
 ---
 
-## How It Works
+## Data Storage
 
-### Adding Transactions
+The application stores all information locally.
 
-1. Select date
-2. Choose transaction type
-3. Select category
-4. Enter amount
-5. Add description
-6. Click **Add Transaction**
-
-### Budget Management
-
-1. Enter monthly budget
-2. Click **Set Budget**
-3. Monitor budget status in real time
-4. Reset budget when required
-
-### Analytics
-
-Users can generate:
-
-- Expense Breakdown Pie Chart
-- Monthly Expense Trend
-- Category-Wise Spending Report
-- Financial Report Export
+| File | Description |
+|------|-------------|
+| transactions.csv | Transaction database |
+| backup_transactions.csv | Automatic backup |
+| budget.txt | Monthly budget |
+| category_budget.json | Category-wise budgets |
 
 ---
 
-## Current Implemented Features
+## Keyboard Shortcuts
 
-### Transaction System
-✔ Add Transactions  
-✔ Edit Transactions  
-✔ Save Edited Transactions  
-✔ Multi-Transaction Delete  
-✔ Custom Categories  
-✔ Input Validation  
-
-### Budget System
-✔ Monthly Budget Tracking  
-✔ Budget Status Monitoring  
-✔ Budget Exceeded Detection  
-✔ Budget Reset Functionality  
-
-### Reports
-✔ Expense Breakdown Chart  
-✔ Monthly Expense Trend  
-✔ Category-Wise Spending Report  
-✔ CSV Report Export  
-
-### Search & Filter
-✔ Search Transactions  
-✔ Filter by Type  
-✔ Reset Filters  
-✔ Auto Refresh After Updates  
+| Shortcut | Action |
+|----------|--------|
+| **Enter** | Add Transaction |
+| **Ctrl + S** | Save Changes |
+| **Ctrl + E** | Edit Transaction |
+| **Delete** | Delete Selected Transaction(s) |
+| **Ctrl + Z** | Undo Delete |
+| **Ctrl + F** | Focus Search |
+| **Esc** | Clear Input Fields |
 
 ---
 
-## Upcoming Features
+## Future Enhancements
 
-### Analytics
-- Monthly Summary Popup
-- Income vs Expense Pie Chart
-- Income vs Expense Bar Chart
-- Dashboard Insights
-- Advanced Analytics
-
-### Exporting
-- Export Filtered Results
-- Excel Report Export
-- PDF Report Export
-
-### Transaction Enhancements
-- Sort Transactions (Date, Amount, Category)
-- Undo Delete
-
-### Budget Improvements
-- Category Budgeting
-
-### UI Improvements
-- Dashboard Cards
-- Dark Theme
-- Modern UI Design
-- Complete Dashboard Redesign
-
----
-
-## Key Learning Outcomes
-
-This project demonstrates:
-
-- Object-oriented programming concepts
-- GUI development using Tkinter
-- Data persistence using CSV files
-- File handling in Python
-- Financial data processing
-- Data visualization using Matplotlib
-- User input validation
-- Budget tracking logic
-- Search and filtering implementation
-
----
-
-## Future Scope
-
-The project can be expanded into a full-featured finance management system by integrating:
-
-- SQLite database support
-- User authentication
-- Cloud synchronization
-- Expense forecasting
-- AI-powered spending insights
-- PDF and Excel reporting
-- Multi-user support
-- Mobile application integration
+- Recurring Transactions
+- Savings Goals
+- Password Protection
+- SQLite Database Support
+- Cloud Synchronization
+- Dark Mode
+- Multi-user Profiles
+- Expense Forecasting using Machine Learning
 
 ---
 
@@ -233,5 +220,5 @@ The project can be expanded into a full-featured finance management system by in
 
 **August Kumar Sasmal**
 
-B.Tech Computer Science & Engineering 
-Manipal Institute of Technology, Manipal
+B.Tech Computer Science & Engineering
+Manipal Institute of Technology
