@@ -29,10 +29,14 @@ BUDGET_FILE = os.path.join(os.path.dirname(__file__), "budget.txt")
 
 CATEGORY_BUDGET_FILE = os.path.join(os.path.dirname(__file__), "category_budget.json")
 
+BACKUP_FILE = os.path.join(os.path.dirname(__file__), "backup_transactions.csv")
+
 MIN_AMOUNT = 1
 MAX_AMOUNT = 10000000
 
 MAX_DESCRIPTION_LENGTH = 30
+
+MIN_PIE_PERCENTAGE = 2
 
 LABEL_FONT = ("Arial", 12, "bold")
 TITLE_FONT = ("Arial", 18, "bold")
@@ -49,6 +53,9 @@ BUDGET_HEIGHT = 450
 
 EXPORT_WIDTH = 300
 EXPORT_HEIGHT = 150
+
+SELECTOR_WIDTH = 300
+SELECTOR_HEIGHT = 180
 
 EVEN_ROW_COLOR = "#f5f5f5"
 ODD_ROW_COLOR = "white"
@@ -105,6 +112,14 @@ def create_csv_file():
             writer = csv.writer(file)
 
             writer.writerow(CSV_HEADERS)
+
+
+
+def create_backup():
+
+    if os.path.exists(CSV_FILE):
+
+        shutil.copy(CSV_FILE, BACKUP_FILE)
 
 
 
@@ -587,6 +602,8 @@ def add_transaction():
 
     date = date_entry.get()
 
+    create_backup()
+
     with open(CSV_FILE, "a", newline="", encoding="utf-8") as file:
 
         writer = csv.writer(file)
@@ -922,6 +939,8 @@ def delete_transaction():
 
         updated_transactions.append(transaction)
 
+    create_backup()
+
     with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
 
         writer = csv.DictWriter(file, fieldnames=CSV_HEADERS)
@@ -960,6 +979,8 @@ def undo_delete():
     for index, transaction in sorted(last_deleted_transactions, key=lambda x: x[0]):
 
         transactions.insert(index, transaction)
+
+    create_backup()
 
     with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
 
@@ -1089,6 +1110,8 @@ def save_changes():
 
             rows.append(row)
 
+    create_backup()
+
     with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
 
         writer = csv.writer(file)
@@ -1112,13 +1135,83 @@ def save_changes():
 
 
 
-def show_expense_breakdown():
+def get_available_years():
+
+    years = set()
+
+    for row in read_transactions():
+
+        years.add(row["Date"][:4])
+
+    years.add(str(datetime.now().year))
+
+    return sorted(years)
+
+
+
+def open_month_selector(button_text, callback):
+
+    selector = tk.Toplevel(root)
+
+    selector.title("Select Month")
+
+    selector.geometry(f"{SELECTOR_WIDTH}x{SELECTOR_HEIGHT}")
+
+    selector.resizable(False, False)
+
+    tk.Label(selector, text="Month").pack(pady=(15, 5))
+
+    months = [
+        "January", "February", "March", "April",
+        "May", "June", "July", "August",
+        "September", "October", "November", "December"
+    ]
+
+    month_combobox = ttk.Combobox(
+        selector,
+        values=months,
+        state="readonly",
+        width=20
+    )
+
+    month_combobox.current(datetime.now().month - 1)
+
+    month_combobox.pack()
+
+    tk.Label(selector, text="Year").pack(pady=(10, 5))
+
+    available_years = get_available_years()
+
+    year_combobox = ttk.Combobox(
+        selector,
+        values=available_years,
+        state="readonly",
+        width=20
+    )
+
+    year_combobox.set(str(datetime.now().year))
+
+    year_combobox.pack()
+
+    tk.Button(
+        selector,
+        text=button_text,
+        command=lambda: callback(
+            selector,
+            month_combobox.get(),
+            year_combobox.get()
+        )
+    ).pack(pady=15)
+
+
+
+def show_monthly_expense_breakdown(selected_month):
 
     category_totals = {}
 
     for row in read_transactions():
 
-        if row["Type"] == "Expense":
+        if row["Type"] == "Expense" and row["Date"].startswith(selected_month):
 
             category = row["Category"]
             amount = float(row["Amount"])
@@ -1146,27 +1239,73 @@ def show_expense_breakdown():
 
     amounts = [amount for category, amount in sorted_categories]
 
-    plt.figure(figsize=(7, 7))
+    total_expense = sum(amounts)
 
-    plt.pie(
-        amounts,
-        labels=labels,
-        autopct="%1.1f%%"
+    filtered_labels = []
+    filtered_amounts = []
+
+    others_total = 0
+
+    for label, amount in zip(labels, amounts):
+
+        percentage = (amount / total_expense) * 100
+
+        if percentage < MIN_PIE_PERCENTAGE:
+            others_total += amount
+
+        else:
+            filtered_labels.append(label)
+            filtered_amounts.append(amount)
+
+    if others_total > 0:
+
+        filtered_labels.append("Others")
+
+        filtered_amounts.append(others_total)
+
+    plt.figure(figsize=(10, 7))
+
+    wedges, _, _ = plt.pie(
+        filtered_amounts,
+        autopct="%1.1f%%",
+        startangle=90
     )
 
-    plt.title("Expense Breakdown by Category")
+    plt.legend(
+        wedges,
+        filtered_labels,
+        title="Categories",
+        loc="center left",
+        bbox_to_anchor=(1, 0.5)
+    )
+
+    display_month = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
+
+    plt.title(f"Expense Breakdown by Category ({display_month})")
 
     plt.show()
 
 
 
-def show_category_report():
+def generate_expense_breakdown(selector, month_name, year):
+
+    month_number = datetime.strptime(month_name, "%B").month
+
+    selected_month = f"{year}-{month_number:02d}"
+
+    selector.destroy()
+
+    show_monthly_expense_breakdown(selected_month)
+
+
+
+def show_monthly_category_report(selected_month):
 
     category_totals = {}
 
     for row in read_transactions():
 
-        if row["Type"] == "Expense":
+        if (row["Type"] == "Expense" and row["Date"].startswith(selected_month)):
 
             category = row["Category"]
 
@@ -1181,6 +1320,8 @@ def show_category_report():
             "No expense data available."
         )
         return
+    
+    display_month = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
 
     report_window = tk.Toplevel(root)
 
@@ -1200,7 +1341,9 @@ def show_category_report():
 
     scrollbar.config(command=text.yview)
 
-    report = ""
+    report = f"Category Report ({display_month})\n"
+
+    report += "=" * 40 + "\n\n"
 
     report += f"{'Category':<25}{'Amount'}\n"
 
@@ -1234,9 +1377,19 @@ def show_category_report():
 
 
 
-def show_monthly_summary():
+def generate_category_report(selector, month_name, year):
 
-    current_month = datetime.now().strftime("%Y-%m")
+    month_number = datetime.strptime(month_name,"%B").month
+
+    selected_month = f"{year}-{month_number:02d}"
+
+    selector.destroy()
+
+    show_monthly_category_report(selected_month)
+
+
+
+def show_monthly_summary(selected_month):
 
     monthly_income = 0
     monthly_expenses = 0
@@ -1246,7 +1399,7 @@ def show_monthly_summary():
 
     for row in read_transactions():
 
-        if not row["Date"].startswith(current_month):
+        if not row["Date"].startswith(selected_month):
             continue
 
         amount = float(row["Amount"])
@@ -1266,6 +1419,8 @@ def show_monthly_summary():
     budget = load_budget()
 
     remaining_budget = budget - monthly_expenses
+
+    display_month = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
 
     report_window = tk.Toplevel(root)
 
@@ -1287,7 +1442,7 @@ def show_monthly_summary():
 
     report = ""
 
-    report += f"Monthly Summary ({current_month})\n"
+    report += f"Monthly Summary ({display_month})\n"
 
     report += "=" * 45 + "\n\n"
 
@@ -1330,10 +1485,20 @@ def show_monthly_summary():
     text.config(state="disabled")
 
 
+   
+def generate_monthly_summary(selector, month_name, year):
 
-def show_category_budget_status():
+    month_number = datetime.strptime(month_name, "%B").month
 
-    current_month = datetime.now().strftime("%Y-%m")
+    selected_month = f"{year}-{month_number:02d}"
+
+    selector.destroy()
+
+    show_monthly_summary(selected_month)
+
+
+
+def show_monthly_category_budget_status(selected_month):
 
     category_budgets = load_category_budgets()
 
@@ -1350,23 +1515,27 @@ def show_category_budget_status():
 
     for row in read_transactions():
 
-        if (row["Type"] == "Expense" and row["Date"].startswith(current_month)):
+        if (row["Type"] == "Expense" and row["Date"].startswith(selected_month)):
 
             category = row["Category"]
 
             amount = float(row["Amount"])
 
-            category_spending[category] = (
-                category_spending.get(category, 0) + amount
-            )
+            category_spending[category] = (category_spending.get(category, 0) + amount)
+
+    display_month = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
 
     report_window = tk.Toplevel(root)
 
-    current_month_display = datetime.now().strftime("%B %Y")
-
-    report_window.title(f"Category Budget Status ({current_month_display})")
+    report_window.title(f"Category Budget Status ({display_month})")
 
     report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
+
+    all_categories = sorted(set(get_all_categories()) | set(category_budgets.keys()))
+
+    report = (f"Category Budget Status ({display_month})\n")
+
+    report += "=" * 75 + "\n\n"
 
     report = (
         f"{'Category':<20}"
@@ -1376,8 +1545,6 @@ def show_category_budget_status():
     )
 
     report += "-" * 75 + "\n\n"
-
-    all_categories = sorted(set(get_all_categories()) | set(category_budgets.keys()))
 
     for category in all_categories:
 
@@ -1434,6 +1601,18 @@ def show_category_budget_status():
     text.insert(tk.END, report)
 
     text.config(state="disabled")
+
+
+
+def generate_category_budget_status(selector, month_name, year):
+
+    month_number = datetime.strptime(month_name, "%B").month
+
+    selected_month = f"{year}-{month_number:02d}"
+
+    selector.destroy()
+
+    show_monthly_category_budget_status(selected_month)
 
 
 
@@ -1996,20 +2175,26 @@ undo_delete_button = tk.Button(
 
 undo_delete_button.grid(row=0, column=3, padx=5, pady=5)
 
-# Expense Breakdown Button
+# Monthly Expense Breakdown Button
 chart_button = tk.Button(
     action_frame,
-    text="Show Expense Breakdown",
-    command=show_expense_breakdown
+    text="Monthly Expense Breakdown",
+    command=lambda: open_month_selector(
+        "Show Expense Breakdown",
+        generate_expense_breakdown
+    )
 )
 
 chart_button.grid(row=1, column=0, padx=5, pady=5)
 
-# Category-Wise Spending Report 
+# Monthly Category-Wise Spending Report 
 category_report_button = tk.Button(
     action_frame,
-    text="Category Report",
-    command=show_category_report
+    text="Monthly Category Report",
+    command=lambda: open_month_selector(
+        "Show Report",
+        generate_category_report
+    )
 )
 
 category_report_button.grid(row=2, column=0, padx=5, pady=5)
@@ -2018,16 +2203,22 @@ category_report_button.grid(row=2, column=0, padx=5, pady=5)
 monthly_summary_button = tk.Button(
     action_frame,
     text="Monthly Summary",
-    command=show_monthly_summary
+    command=lambda: open_month_selector(
+        "Show Summary",
+        generate_monthly_summary
+    )
 )
 
 monthly_summary_button.grid(row=2, column=1, padx=5, pady=5)
 
-# Category Budget Status Button
+# Monhly Category Budget Status Button
 category_budget_status_button = tk.Button(
     action_frame,
-    text="Category Budget Status",
-    command=show_category_budget_status
+    text="Monthly Category Budget Status",
+    command=lambda: open_month_selector(
+        "Show Status",
+        generate_category_budget_status
+    )
 )
 
 category_budget_status_button.grid(row=2, column=2, padx=5, pady=5)
@@ -2035,7 +2226,7 @@ category_budget_status_button.grid(row=2, column=2, padx=5, pady=5)
 # Monthly Expense Trend Button
 trend_button = tk.Button(
     action_frame,
-    text="Show Monthly Trend",
+    text="Monthly Trend",
     command=show_monthly_trend
 )
 
@@ -2088,15 +2279,19 @@ for column in columns:
 
     elif column == "Description":
 
-        tree.column(column, width=300, anchor="w")
+        tree.column(column, width=350, minwidth=250, anchor="w", stretch=True)
+
+    elif column == "Category":
+
+        tree.column(column, width=180, minwidth=140, anchor="center", stretch=True)
 
     elif column == "Amount":
 
-        tree.column(column, width=120, anchor="e")
+        tree.column(column, width=120, minwidth=100, anchor="e", stretch=False)
 
     else:
 
-        tree.column(column, width=140, anchor="center")
+        tree.column(column, width=140, minwidth=100, anchor="center", stretch=True)
 
 update_sort_headers()
 
