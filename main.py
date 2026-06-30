@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from datetime import datetime
+from datetime import datetime, timedelta
 from tkcalendar import DateEntry
 from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer)
 from reportlab.lib.styles import getSampleStyleSheet
@@ -34,7 +34,7 @@ BACKUP_FILE = os.path.join(os.path.dirname(__file__), "backup_transactions.csv")
 MIN_AMOUNT = 1
 MAX_AMOUNT = 10000000
 
-MAX_DESCRIPTION_LENGTH = 30
+MAX_DESCRIPTION_LENGTH = 50
 
 MIN_PIE_PERCENTAGE = 2
 
@@ -48,8 +48,8 @@ WINDOW_HEIGHT = 850
 REPORT_WIDTH = 850
 REPORT_HEIGHT = 450
 
-BUDGET_WIDTH = 400
-BUDGET_HEIGHT = 450
+BUDGET_WIDTH = 500
+BUDGET_HEIGHT = 550
 
 EXPORT_WIDTH = 300
 EXPORT_HEIGHT = 150
@@ -66,6 +66,8 @@ sort_reverse = {"Date": True}
 sort_column = "Date"
 
 delete_history = []
+
+search_after_id = None
 
 
 
@@ -103,6 +105,17 @@ def clear_inputs():
 
 
 
+def enable_mousewheel_scrolling(widget):
+
+    def _on_mousewheel(event):
+        widget.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    widget.bind("<Enter>", lambda e: widget.bind_all("<MouseWheel>", _on_mousewheel))
+
+    widget.bind("<Leave>", lambda e: widget.unbind_all("<MouseWheel>"))
+
+
+
 def create_csv_file():
 
     if not os.path.exists(CSV_FILE):
@@ -135,7 +148,9 @@ def get_all_categories():
 
     categories = set(CATEGORIES)
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
         categories.add(row["Category"])
 
     return sorted(categories)
@@ -171,7 +186,9 @@ def check_budget_warning(amount):
 
     monthly_expenses = 0
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         if (
             row["Type"] == "Expense"
@@ -206,7 +223,9 @@ def check_category_budget_warning(category, amount):
 
     category_spent = 0
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         if (
             row["Type"] == "Expense"
@@ -240,7 +259,7 @@ def load_category_budgets():
 
             return json.load(file)
 
-    except:
+    except (FileNotFoundError, json.JSONDecodeError):
 
         return {}
 
@@ -262,6 +281,37 @@ def open_category_budget_window():
 
     budget_window.geometry(f"{BUDGET_WIDTH}x{BUDGET_HEIGHT}")
 
+    canvas = tk.Canvas(budget_window)
+
+    scrollbar = tk.Scrollbar(
+        budget_window,
+        orient="vertical",
+        command=canvas.yview
+    )
+
+    scrollable_frame = tk.Frame(canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+    )
+
+    canvas.create_window(
+        (0, 0),
+        window=scrollable_frame,
+        anchor="nw"
+    )
+
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    enable_mousewheel_scrolling(canvas)
+
+    canvas.pack(side="left", fill="both", expand=True)
+
+    scrollbar.pack(side="right", fill="y")
+
     saved_budgets = load_category_budgets()
 
     category_entries = {}
@@ -270,14 +320,14 @@ def open_category_budget_window():
 
     for index, category in enumerate(all_categories):
 
-        tk.Label(budget_window, text=category).grid(row=index, column=0, padx=(15, 10), pady=6, sticky="w")
+        tk.Label(scrollable_frame, text=category).grid(row=index, column=0, padx=(15, 10), pady=6, sticky="w")
 
-        entry = tk.Entry( budget_window, width=15)
+        entry = tk.Entry(scrollable_frame, width=15)
 
         entry.grid(row=index, column=1, padx=(15, 10), pady=6)
 
         reset_button = tk.Button(
-            budget_window,
+            scrollable_frame,
             text="Reset",
             width=8,
             command=lambda e=entry: reset_single_category(e)
@@ -295,7 +345,7 @@ def open_category_budget_window():
         category_entries[category] = entry
 
     save_button = tk.Button(
-        budget_window,
+        scrollable_frame,
         text="Save Budgets",
         command=lambda: save_category_budget_entries(
             category_entries,
@@ -447,7 +497,9 @@ def get_next_id():
 
     highest_id = 0
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         current_id = int(row["ID"])
 
@@ -670,7 +722,9 @@ def update_summary():
 
         current_month = datetime.now().strftime("%Y-%m")
 
-        for row in read_transactions():
+        transactions = read_transactions()
+
+        for row in transactions:
 
             amount = float(row["Amount"])
 
@@ -748,11 +802,13 @@ def apply_filter():
     for item in tree.get_children():
         tree.delete(item)
 
-    search_text = " ".join(search_entry.get().strip())
+    search_text = " ".join(search_entry.get().lower().strip())
 
     selected_type = filter_combobox.get()
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         date = " ".join(row["Date"].lower().split())
         transaction_type = " ".join(row["Type"].lower().split())
@@ -789,6 +845,17 @@ def apply_filter():
             sort_column,
             toggle=False
         )
+
+
+
+def debounce_search(event=None):
+
+    global search_after_id
+
+    if search_after_id is not None:
+        root.after_cancel(search_after_id)
+
+    search_after_id = root.after(250, apply_filter)
 
 
 
@@ -1143,7 +1210,9 @@ def get_available_years():
 
     years = set()
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         years.add(row["Date"][:4])
 
@@ -1213,7 +1282,9 @@ def show_monthly_expense_breakdown(selected_month):
 
     category_totals = {}
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         if row["Type"] == "Expense" and row["Date"].startswith(selected_month):
 
@@ -1307,7 +1378,9 @@ def show_monthly_category_report(selected_month):
 
     category_totals = {}
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         if (row["Type"] == "Expense" and row["Date"].startswith(selected_month)):
 
@@ -1344,6 +1417,8 @@ def show_monthly_category_report(selected_month):
     text.pack(fill="both", expand=True, padx=10, pady=10)
 
     scrollbar.config(command=text.yview)
+
+    enable_mousewheel_scrolling(text)
 
     report = f"Category Report ({display_month})\n"
 
@@ -1401,7 +1476,9 @@ def show_monthly_summary(selected_month):
     income_count = 0
     expense_count = 0
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         if not row["Date"].startswith(selected_month):
             continue
@@ -1443,6 +1520,8 @@ def show_monthly_summary(selected_month):
     text.pack(fill="both", expand=True, padx=10, pady=10)
 
     scrollbar.config(command=text.yview)
+
+    enable_mousewheel_scrolling(text)
 
     report = ""
 
@@ -1517,7 +1596,9 @@ def show_monthly_category_budget_status(selected_month):
 
     category_spending = {}
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         if (row["Type"] == "Expense" and row["Date"].startswith(selected_month)):
 
@@ -1602,6 +1683,8 @@ def show_monthly_category_budget_status(selected_month):
 
     scrollbar.config(command=text.yview)
 
+    enable_mousewheel_scrolling(text)
+
     text.insert(tk.END, report)
 
     text.config(state="disabled")
@@ -1624,7 +1707,9 @@ def show_monthly_trend():
 
     monthly_expenses = {}
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         if row["Type"] == "Expense":
 
@@ -1647,15 +1732,46 @@ def show_monthly_trend():
 
     months = sorted(monthly_expenses.keys())
 
+    start_month = datetime.strptime(months[0], "%Y-%m")
+    end_month = datetime.strptime(months[-1], "%Y-%m")
+
+    all_months = []
+
+    current = start_month
+
+    while current <= end_month:
+
+        month = current.strftime("%Y-%m")
+
+        all_months.append(month)
+
+        if current.month == 12:
+
+            current = current.replace(
+                year=current.year + 1,
+                month=1
+            )
+
+        else:
+
+            current = current.replace(
+                month=current.month + 1
+            )
+
     expenses = [
-        monthly_expenses[month]
-        for month in months
+        monthly_expenses.get(month, 0)
+        for month in all_months
     ]
 
     plt.figure(figsize=(8, 5))
 
+    display_months = [
+        datetime.strptime(month, "%Y-%m").strftime("%b %Y")
+        for month in all_months
+    ]
+
     plt.plot(
-        months,
+        display_months,
         expenses,
         marker="o"
     )
@@ -1757,7 +1873,9 @@ def export_csv(selected_month):
 
             writer.writerow(CSV_HEADERS)
 
-            for row in read_transactions():
+            transactions = read_transactions()
+
+            for row in transactions:
 
                 if row["Date"].startswith(selected_month):
 
@@ -1805,7 +1923,9 @@ def export_pdf(selected_month):
     
     table_data = [["Date", "Type", "Category", "Amount", "Description"]]
 
-    for row in read_transactions():
+    transactions = read_transactions()
+
+    for row in transactions:
 
         if not row["Date"].startswith(selected_month):
             continue
@@ -1896,7 +2016,9 @@ def export_excel(selected_month):
 
             cell.font = Font(bold=True)
 
-        for row in read_transactions():
+        transactions = read_transactions()
+
+        for row in transactions:
 
             if not row["Date"].startswith(selected_month):
                 continue
@@ -2165,7 +2287,7 @@ search_entry.grid(row=0, column=1, padx=5)
 
 search_entry.bind(
     "<KeyRelease>",
-    lambda event: apply_filter()
+    debounce_search
 )
 
 # Filter
@@ -2375,6 +2497,8 @@ scrollbar_y = ttk.Scrollbar(
 )
 
 tree.configure(yscrollcommand=scrollbar_y.set)
+
+enable_mousewheel_scrolling(tree)
 
 # Horizontal Scrollbar
 scrollbar_x = ttk.Scrollbar(
