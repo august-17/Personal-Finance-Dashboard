@@ -2,12 +2,14 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
 from tkcalendar import DateEntry
-from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle)
+from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer)
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib import colors
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
+import re
 import csv
 import json
 import os
@@ -29,6 +31,8 @@ CATEGORY_BUDGET_FILE = os.path.join(os.path.dirname(__file__), "category_budget.
 
 MIN_AMOUNT = 1
 MAX_AMOUNT = 10000000
+
+MAX_DESCRIPTION_LENGTH = 30
 
 LABEL_FONT = ("Arial", 12, "bold")
 TITLE_FONT = ("Arial", 18, "bold")
@@ -112,6 +116,17 @@ def read_transactions():
 
 
 
+def get_all_categories():
+
+    categories = set(CATEGORIES)
+
+    for row in read_transactions():
+        categories.add(row["Category"])
+
+    return sorted(categories)
+
+
+
 def load_budget():
 
     if not os.path.exists(BUDGET_FILE):
@@ -125,6 +140,77 @@ def load_budget():
     except ValueError:
 
         return 0
+
+
+def check_budget_warning(amount):
+
+    if type_combobox.get() != "Expense":
+        return True
+
+    budget = load_budget()
+
+    if budget == 0:
+        return True
+
+    current_month = datetime.now().strftime("%Y-%m")
+
+    monthly_expenses = 0
+
+    for row in read_transactions():
+
+        if (
+            row["Type"] == "Expense"
+            and row["Date"].startswith(current_month)
+        ):
+            monthly_expenses += float(row["Amount"])
+
+    if monthly_expenses + amount > budget:
+
+        return messagebox.askyesno(
+            "Budget Warning",
+            "This transaction exceeds your monthly budget.\n\nDo you want to continue?"
+        )
+
+    return True
+
+
+
+def check_category_budget_warning(category, amount):
+
+    if type_combobox.get() != "Expense":
+        return True
+
+    category_budgets = load_category_budgets()
+
+    if category not in category_budgets:
+        return True
+
+    budget = category_budgets[category]
+
+    current_month = datetime.now().strftime("%Y-%m")
+
+    category_spent = 0
+
+    for row in read_transactions():
+
+        if (
+            row["Type"] == "Expense"
+            and row["Category"] == category
+            and row["Date"].startswith(current_month)
+        ):
+
+            category_spent += float(row["Amount"])
+
+    if category_spent + amount > budget:
+
+        return messagebox.askyesno(
+            "Category Budget Warning",
+            f"This transaction exceeds the budget for '{category}'.\n\n"
+            "Do you want to continue?"
+        )
+
+    return True
+
 
 
 def load_category_budgets():
@@ -165,7 +251,9 @@ def open_category_budget_window():
 
     category_entries = {}
 
-    for index, category in enumerate(CATEGORIES):
+    all_categories = get_all_categories()
+
+    for index, category in enumerate(all_categories):
 
         tk.Label(budget_window, text=category).grid(row=index, column=0, padx=(15, 10), pady=6, sticky="w")
 
@@ -200,7 +288,7 @@ def open_category_budget_window():
         )
     )
 
-    save_button.grid(row=len(CATEGORIES), column=0, columnspan=2, padx=10, pady=15)
+    save_button.grid(row=len(all_categories), column=0, columnspan=3, padx=10, pady=15)
 
 
 
@@ -403,6 +491,23 @@ def validate_amount():
 
 
 
+def validate_description():
+
+    description = description_entry.get().strip()
+
+    if len(description) > MAX_DESCRIPTION_LENGTH:
+
+        messagebox.showerror(
+            "Error",
+            f"Description cannot exceed {MAX_DESCRIPTION_LENGTH} characters."
+        )
+
+        return None
+
+    return description
+
+
+
 def get_category():
 
     category = category_combobox.get()
@@ -420,8 +525,36 @@ def get_category():
         )
 
         return None
+    
+    if len(category) > 30:
 
-    return category
+        messagebox.showerror(
+            "Error",
+            "Category name cannot exceed 30 characters."
+        )
+
+        return None
+
+    if not re.search(r"[A-Za-z]", category):
+
+        messagebox.showerror(
+            "Error",
+            "Category must contain at least one alphabet."
+        )
+
+        return None
+
+    if not re.fullmatch(r"[A-Za-z0-9 &()-]+", category):
+
+        messagebox.showerror(
+            "Error",
+            "Category contains invalid characters."
+        )
+
+        return None
+
+
+    return category.title()
 
 
 
@@ -439,7 +572,16 @@ def add_transaction():
     if amount is None:
         return
     
-    description = description_entry.get().strip()
+    if not check_budget_warning(amount):
+        return
+    
+    if not check_category_budget_warning(category, amount):
+        return
+    
+    description = validate_description()
+
+    if description is None:
+        return
     
     transaction_id = get_next_id()
 
@@ -828,7 +970,7 @@ def undo_delete():
         writer.writerows(transactions)
 
     if not delete_history:
-        
+
         undo_delete_button.config(state="disabled")
 
     apply_filter()
@@ -926,7 +1068,10 @@ def save_changes():
     if amount is None:
         return
     
-    description = description_entry.get().strip()
+    description = validate_description()
+
+    if description is None:
+        return
     
     rows = []
 
@@ -990,12 +1135,22 @@ def show_expense_breakdown():
             "No expense data available."
         )
         return
+    
+    sorted_categories = sorted(
+        category_totals.items(),
+        key=lambda item: item[1],
+        reverse=True
+    )
+
+    labels = [category for category, amount in sorted_categories]
+
+    amounts = [amount for category, amount in sorted_categories]
 
     plt.figure(figsize=(7, 7))
 
     plt.pie(
-        category_totals.values(),
-        labels=category_totals.keys(),
+        amounts,
+        labels=labels,
         autopct="%1.1f%%"
     )
 
@@ -1035,9 +1190,15 @@ def show_category_report():
 
     report_window.resizable(False, False)
 
-    text = tk.Text(report_window, font=REPORT_FONT)
+    scrollbar = tk.Scrollbar(report_window)
+
+    scrollbar.pack(side="right", fill="y")
+
+    text = tk.Text(report_window, font=REPORT_FONT, yscrollcommand=scrollbar.set)
 
     text.pack(fill="both", expand=True, padx=10, pady=10)
+
+    scrollbar.config(command=text.yview)
 
     report = ""
 
@@ -1047,7 +1208,11 @@ def show_category_report():
 
     total = 0
 
-    for category, amount in sorted(category_totals.items()):
+    for category, amount in sorted(
+        category_totals.items(),
+        key=lambda item: item[1],
+        reverse=True
+    ):
 
         report += (
             f"{category:<25}"
@@ -1110,9 +1275,15 @@ def show_monthly_summary():
 
     report_window.resizable(False, False)
 
-    text = tk.Text(report_window, font=REPORT_FONT)
+    scrollbar = tk.Scrollbar(report_window)
+
+    scrollbar.pack(side="right", fill="y")
+
+    text = tk.Text(report_window, font=REPORT_FONT, yscrollcommand=scrollbar.set)
 
     text.pack(fill="both", expand=True, padx=10, pady=10)
+
+    scrollbar.config(command=text.yview)
 
     report = ""
 
@@ -1206,7 +1377,9 @@ def show_category_budget_status():
 
     report += "-" * 75 + "\n\n"
 
-    for category in CATEGORIES:
+    all_categories = sorted(set(get_all_categories()) | set(category_budgets.keys()))
+
+    for category in all_categories:
 
         budget = category_budgets.get(category)
 
@@ -1248,13 +1421,15 @@ def show_category_budget_status():
             f"{status:>25}\n"
         )
 
-    text = tk.Text(
-        report_window,
-        wrap="none",
-        font=REPORT_FONT
-    )
+    scrollbar = tk.Scrollbar(report_window)
 
-    text.pack(fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    text = tk.Text(report_window, wrap="none", font=REPORT_FONT, yscrollcommand=scrollbar.set)
+
+    text.pack(fill="both", expand=True, padx=10, pady=10)
+
+    scrollbar.config(command=text.yview)
 
     text.insert(tk.END, report)
 
@@ -1410,6 +1585,12 @@ def export_pdf():
         return
     
     pdf = SimpleDocTemplate(file_path, pagesize=landscape(A4))
+
+    styles = getSampleStyleSheet()
+
+    title_style = styles["Heading1"]
+
+    normal_style = styles["Normal"]
     
     table_data = [CSV_HEADERS]
 
@@ -1423,6 +1604,13 @@ def export_pdf():
             f"Rs.{float(row['Amount']):,.2f}",
             row["Description"]
         ])
+
+    title = Paragraph("Personal Finance Report", title_style)
+
+    generated_on = Paragraph(
+        f"Generated On: {datetime.now().strftime('%d %B %Y, %I:%M %p')}",
+        normal_style
+    )
 
     table = Table(table_data, colWidths=[40, 70, 60, 90, 70, 180], repeatRows=1)
 
@@ -1452,7 +1640,7 @@ def export_pdf():
 
         table.splitByRow = True
 
-        pdf.build([table])
+        pdf.build([title, Spacer(1, 12), generated_on, Spacer(1, 20), table])
 
         messagebox.showinfo(
             "Success",
