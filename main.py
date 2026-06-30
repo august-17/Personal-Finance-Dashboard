@@ -1952,6 +1952,29 @@ def export_excel(selected_month):
 
 
 
+def shortcut_add(event=None):
+    add_transaction()
+
+def shortcut_save(event=None):
+    save_changes()
+
+def shortcut_delete(event=None):
+    delete_transaction()
+
+def shortcut_undo(event=None):
+    undo_delete()
+
+def shortcut_edit(event=None):
+    edit_transaction()
+
+def shortcut_search(event=None):
+    search_entry.focus_set()
+
+def shortcut_clear(event=None):
+    clear_inputs()
+
+
+
 create_csv_file()
 
 root = tk.Tk()
@@ -2374,5 +2397,19 @@ tree.pack(side="left", fill="both", expand=True)
 load_transactions()
 
 update_summary()
+
+root.bind("<Return>", shortcut_add)
+
+root.bind("<Control-s>", shortcut_save)
+
+root.bind("<Delete>", shortcut_delete)
+
+root.bind("<Control-z>", shortcut_undo)
+
+root.bind("<Control-e>", shortcut_edit)
+
+root.bind("<Control-f>", shortcut_search)
+
+root.bind("<Escape>", shortcut_clear)
 
 root.mainloop()
