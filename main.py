@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from datetime import datetime
 from tkcalendar import DateEntry
 from reportlab.platypus import (SimpleDocTemplate, Table, TableStyle)
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib import colors
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -53,7 +54,7 @@ editing_transaction_id = None
 sort_reverse = {"Date": False}
 sort_column = "Date"
 
-last_deleted_transactions = []
+delete_history = []
 
 
 
@@ -172,6 +173,15 @@ def open_category_budget_window():
 
         entry.grid(row=index, column=1, padx=(15, 10), pady=6)
 
+        reset_button = tk.Button(
+            budget_window,
+            text="Reset",
+            width=8,
+            command=lambda e=entry: reset_single_category(e)
+        )
+
+        reset_button.grid(row=index, column=2, padx=5, pady=6)
+
         if category in saved_budgets:
 
             entry.insert(
@@ -191,6 +201,11 @@ def open_category_budget_window():
     )
 
     save_button.grid(row=len(CATEGORIES), column=0, columnspan=2, padx=10, pady=15)
+
+
+
+def reset_single_category(entry):
+    entry.delete(0, tk.END)
 
 
 
@@ -722,7 +737,7 @@ def sort_treeview(column, toggle=True):
 
 def delete_transaction():
 
-    global last_deleted_transactions
+    global delete_history
 
     selected_item = tree.selection()
 
@@ -744,7 +759,7 @@ def delete_transaction():
 
     transaction_ids = set()
 
-    last_deleted_transactions.clear()
+    current_delete = []
 
     for item in selected_item:
 
@@ -759,7 +774,7 @@ def delete_transaction():
 
         if transaction["ID"] in transaction_ids:
                 
-            last_deleted_transactions.append((index, transaction.copy()))
+            current_delete.append((index, transaction.copy()))
                 
             continue
 
@@ -773,6 +788,8 @@ def delete_transaction():
 
         writer.writerows(updated_transactions)
 
+    delete_history.append(current_delete)
+
     apply_filter()
 
     update_summary()
@@ -783,9 +800,9 @@ def delete_transaction():
 
 def undo_delete():
 
-    global last_deleted_transactions
+    global delete_history
 
-    if not last_deleted_transactions:
+    if not delete_history:
 
         messagebox.showinfo(
             "Undo Delete",
@@ -793,6 +810,8 @@ def undo_delete():
         )
 
         return
+    
+    last_deleted_transactions = delete_history.pop()
     
     transactions = read_transactions()
 
@@ -808,9 +827,9 @@ def undo_delete():
 
         writer.writerows(transactions)
 
-    last_deleted_transactions.clear()
-
-    undo_delete_button.config(state="disabled")
+    if not delete_history:
+        
+        undo_delete_button.config(state="disabled")
 
     apply_filter()
 
@@ -1143,6 +1162,8 @@ def show_monthly_summary():
 
 def show_category_budget_status():
 
+    current_month = datetime.now().strftime("%Y-%m")
+
     category_budgets = load_category_budgets()
 
     if not category_budgets:
@@ -1158,7 +1179,7 @@ def show_category_budget_status():
 
     for row in read_transactions():
 
-        if row["Type"] == "Expense":
+        if (row["Type"] == "Expense" and row["Date"].startswith(current_month)):
 
             category = row["Category"]
 
@@ -1170,7 +1191,9 @@ def show_category_budget_status():
 
     report_window = tk.Toplevel(root)
 
-    report_window.title("Category Budget Status")
+    current_month_display = datetime.now().strftime("%B %Y")
+
+    report_window.title(f"Category Budget Status ({current_month_display})")
 
     report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
 
@@ -1386,7 +1409,7 @@ def export_pdf():
     if not file_path:
         return
     
-    pdf = SimpleDocTemplate(file_path)
+    pdf = SimpleDocTemplate(file_path, pagesize=landscape(A4))
     
     table_data = [CSV_HEADERS]
 
@@ -1397,11 +1420,11 @@ def export_pdf():
             row["Date"],
             row["Type"],
             row["Category"],
-            f"₹{float(row['Amount']):,.2f}",
+            f"Rs.{float(row['Amount']):,.2f}",
             row["Description"]
         ])
 
-    table = Table(table_data)
+    table = Table(table_data, colWidths=[40, 70, 60, 90, 70, 180], repeatRows=1)
 
     table.setStyle(
 
@@ -1425,9 +1448,11 @@ def export_pdf():
 
     )
 
-    pdf.build([table])
-
     try:
+
+        table.splitByRow = True
+
+        pdf.build([table])
 
         messagebox.showinfo(
             "Success",
@@ -1690,7 +1715,7 @@ category_combobox.bind(
     handle_category_change
 )
 
-# Transaction Button
+# Add Transaction Button
 add_button = tk.Button(
     input_frame,
     text="Add Transaction",
@@ -1764,7 +1789,7 @@ save_button = tk.Button(
 
 save_button.grid(row=0, column=1, padx=5, pady=5)
 
-# Delete Transaction Button
+# Delete Transaction(s) Button
 delete_button = tk.Button(
     action_frame,
     text="Delete Selected Transaction(s)",
@@ -1819,7 +1844,7 @@ category_budget_status_button = tk.Button(
 
 category_budget_status_button.grid(row=2, column=2, padx=5, pady=5)
 
-# Monthly Trend Button
+# Monthly Expense Trend Button
 trend_button = tk.Button(
     action_frame,
     text="Show Monthly Trend",
