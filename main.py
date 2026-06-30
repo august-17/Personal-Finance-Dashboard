@@ -76,7 +76,6 @@ def handle_category_change(event):
     if category_combobox.get() == "Other":
 
         custom_category_label.grid(row=5, column=0, padx=5, pady=5)
-
         custom_category_entry.grid(row=5, column=1, padx=5, pady=5)
 
     else:
@@ -108,6 +107,7 @@ def clear_inputs():
 def enable_mousewheel_scrolling(widget):
 
     def _on_mousewheel(event):
+
         widget.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     widget.bind("<Enter>", lambda e: widget.bind_all("<MouseWheel>", _on_mousewheel))
@@ -160,11 +160,13 @@ def get_all_categories():
 def load_budget():
 
     if not os.path.exists(BUDGET_FILE):
+
         return 0
 
     try:
 
         with open(BUDGET_FILE, "r", encoding="utf-8") as file:
+
             return float(file.read())
 
     except ValueError:
@@ -175,11 +177,13 @@ def load_budget():
 def check_budget_warning(amount):
 
     if type_combobox.get() != "Expense":
+
         return True
 
     budget = load_budget()
 
     if budget == 0:
+
         return True
 
     current_month = datetime.now().strftime("%Y-%m")
@@ -194,6 +198,7 @@ def check_budget_warning(amount):
             row["Type"] == "Expense"
             and row["Date"].startswith(current_month)
         ):
+            
             monthly_expenses += float(row["Amount"])
 
     if monthly_expenses + amount > budget:
@@ -210,11 +215,13 @@ def check_budget_warning(amount):
 def check_category_budget_warning(category, amount):
 
     if type_combobox.get() != "Expense":
+
         return True
 
     category_budgets = load_category_budgets()
 
     if category not in category_budgets:
+
         return True
 
     budget = category_budgets[category]
@@ -358,6 +365,7 @@ def open_category_budget_window():
 
 
 def reset_single_category(entry):
+
     entry.delete(0, tk.END)
 
 
@@ -371,6 +379,7 @@ def save_category_budget_entries(category_entries, budget_window):
         budget = entry.get().strip()
 
         if not budget:
+
             continue
 
         try:
@@ -458,6 +467,7 @@ def save_budget():
         return
 
     with open(BUDGET_FILE, "w", encoding="utf-8") as file:
+
         file.write(str(budget))
 
     update_summary()
@@ -477,9 +487,11 @@ def reset_budget():
     )
 
     if not confirm:
+
         return
 
     if os.path.exists(BUDGET_FILE):
+
         os.remove(BUDGET_FILE)
 
     budget_entry.delete(0, tk.END)
@@ -504,6 +516,7 @@ def get_next_id():
         current_id = int(row["ID"])
 
         if current_id > highest_id:
+
             highest_id = current_id
 
     return highest_id + 1
@@ -580,6 +593,7 @@ def get_category():
     category = category_combobox.get()
 
     if category != "Other":
+
         return category
 
     category = custom_category_entry.get().strip()
@@ -632,22 +646,27 @@ def add_transaction():
     category = get_category()
 
     if category is None:
+
         return
 
     amount = validate_amount()
 
     if amount is None:
+
         return
     
     if not check_budget_warning(amount):
+
         return
     
     if not check_category_budget_warning(category, amount):
+
         return
     
     description = validate_description()
 
     if description is None:
+
         return
     
     transaction_id = get_next_id()
@@ -729,64 +748,46 @@ def update_summary():
             amount = float(row["Amount"])
 
             if row["Type"] == "Income":
+
                 total_income += amount
 
             else:
+
                 total_expenses += amount
 
                 if row["Date"].startswith(current_month):
+
                     monthly_expenses += amount
 
         balance = total_income - total_expenses
 
         remaining_budget = budget - monthly_expenses
 
-        income_label.config(
-            text=f"Total Income: ₹{total_income:,.2f}"
-        )
+        income_label.config(text=f"Total Income: ₹{total_income:,.2f}")
 
-        expense_label.config(
-            text=f"Total Expenses: ₹{total_expenses:,.2f}"
-        )
+        expense_label.config(text=f"Total Expenses: ₹{total_expenses:,.2f}")
 
         if balance >= 0:
 
-            balance_label.config(
-                text=f"Current Balance: ₹{balance:,.2f}",
-                fg="green"
-            )
+            balance_label.config(text=f"Current Balance: ₹{balance:,.2f}", fg="green")
 
         else:
 
-            balance_label.config(
-                text=f"Current Deficit: ₹{abs(balance):,.2f}",
-                fg="red"
-            )
+            balance_label.config(text=f"Current Deficit: ₹{abs(balance):,.2f}", fg="red")
 
-        budget_label.config(
-            text=f"Monthly Budget: ₹{budget:,.2f}"
-        )
+        budget_label.config(text=f"Monthly Budget: ₹{budget:,.2f}")
 
         if budget == 0:
 
-            status_label.config(
-                text="Budget Status: Not Set",
-                fg="black"
-            )
+            status_label.config(text="Budget Status: Not Set", fg="black")
 
         elif remaining_budget >= 0:
 
-            status_label.config(
-                text=f"Budget Status: ₹{remaining_budget:,.2f} Remaining",
-                fg="green"
-            )
+            status_label.config(text=f"Budget Status: ₹{remaining_budget:,.2f} Remaining", fg="green")
 
         else:
 
-            status_label.config(
-                text=f"Budget Status: ₹{abs(remaining_budget):,.2f} Exceeded",
-                fg="red"
-            )
+            status_label.config(text=f"Budget Status: ₹{abs(remaining_budget):,.2f} Exceeded", fg="red")
 
     except Exception as e:
 
@@ -800,6 +801,7 @@ def update_summary():
 def apply_filter():
 
     for item in tree.get_children():
+
         tree.delete(item)
 
     search_text = " ".join(search_entry.get().lower().strip())
@@ -824,10 +826,7 @@ def apply_filter():
             or search_text in description
         )
 
-        matches_type = (
-            selected_type == "All"
-            or row["Type"] == selected_type
-        )
+        matches_type = (selected_type == "All" or row["Type"] == selected_type)
 
         if matches_search and matches_type:
                 
@@ -841,10 +840,8 @@ def apply_filter():
             ))
 
     if sort_column is not None:
-        sort_treeview(
-            sort_column,
-            toggle=False
-        )
+
+        sort_treeview(sort_column,toggle=False)
 
 
 
@@ -853,6 +850,7 @@ def debounce_search(event=None):
     global search_after_id
 
     if search_after_id is not None:
+
         root.after_cancel(search_after_id)
 
     search_after_id = root.after(250, apply_filter)
@@ -1120,7 +1118,6 @@ def edit_transaction():
         category_combobox.set("Other")
 
         custom_category_label.grid(row=5, column=0, padx=5, pady=5)
-
         custom_category_entry.grid(row=5, column=1, padx=5,pady=5)
 
         custom_category_entry.delete(0, tk.END)
@@ -1153,16 +1150,19 @@ def save_changes():
     category = get_category()
 
     if category is None:
+
         return
 
     amount = validate_amount()
 
     if amount is None:
+
         return
     
     description = validate_description()
 
     if description is None:
+
         return
     
     rows = []
@@ -1292,6 +1292,7 @@ def show_monthly_expense_breakdown(selected_month):
             amount = float(row["Amount"])
 
             if category not in category_totals:
+
                 category_totals[category] = 0
 
             category_totals[category] += amount
@@ -1326,9 +1327,11 @@ def show_monthly_expense_breakdown(selected_month):
         percentage = (amount / total_expense) * 100
 
         if percentage < MIN_PIE_PERCENTAGE:
+
             others_total += amount
 
         else:
+
             filtered_labels.append(label)
             filtered_amounts.append(amount)
 
@@ -1481,6 +1484,7 @@ def show_monthly_summary(selected_month):
     for row in transactions:
 
         if not row["Date"].startswith(selected_month):
+
             continue
 
         amount = float(row["Amount"])
@@ -1718,6 +1722,7 @@ def show_monthly_trend():
             amount = float(row["Amount"])
 
             if month not in monthly_expenses:
+
                 monthly_expenses[month] = 0
 
             monthly_expenses[month] += amount
@@ -1863,6 +1868,7 @@ def export_csv(selected_month):
     )
 
     if not file_path:
+
         return
 
     try:
@@ -1911,6 +1917,7 @@ def export_pdf(selected_month):
     )
 
     if not file_path:
+
         return
     
     pdf = SimpleDocTemplate(file_path, pagesize=landscape(A4))
@@ -1928,6 +1935,7 @@ def export_pdf(selected_month):
     for row in transactions:
 
         if not row["Date"].startswith(selected_month):
+
             continue
 
         table_data.append([
@@ -2000,6 +2008,7 @@ def export_excel(selected_month):
     )
 
     if not file_path:
+
         return
 
     try:
@@ -2021,6 +2030,7 @@ def export_excel(selected_month):
         for row in transactions:
 
             if not row["Date"].startswith(selected_month):
+                
                 continue
 
             worksheet.append([
