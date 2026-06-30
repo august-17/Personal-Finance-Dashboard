@@ -62,7 +62,7 @@ ODD_ROW_COLOR = "white"
 
 editing_transaction_id = None
 
-sort_reverse = {"Date": False}
+sort_reverse = {"Date": True}
 sort_column = "Date"
 
 delete_history = []
@@ -636,9 +636,7 @@ def load_transactions():
 
         transactions = read_transactions()
 
-        transactions.sort(
-            key=lambda row: row["Date"]
-        )
+        transactions.sort(key=lambda row: row["Date"], reverse=True)
 
         for row in transactions:
 
@@ -750,18 +748,24 @@ def apply_filter():
     for item in tree.get_children():
         tree.delete(item)
 
-    search_text = search_entry.get().strip().lower()
+    search_text = " ".join(search_entry.get().strip())
 
     selected_type = filter_combobox.get()
 
     for row in read_transactions():
 
+        date = " ".join(row["Date"].lower().split())
+        transaction_type = " ".join(row["Type"].lower().split())
+        category = " ".join(row["Category"].lower().split())
+        amount = " ".join(row["Amount"].lower().split())
+        description = " ".join(row["Description"].lower().split())
+
         matches_search = (
-            search_text in row["Date"].lower()
-            or search_text in row["Type"].lower()
-            or search_text in row["Category"].lower()
-            or search_text in row["Amount"].lower()
-            or search_text in row["Description"].lower()
+            search_text in date
+            or search_text in transaction_type
+            or search_text in category
+            or search_text in amount
+            or search_text in description
         )
 
         matches_type = (
@@ -1666,27 +1670,11 @@ def show_monthly_trend():
 
 
 
-def export_selected_format(format_combobox, export_window):
+def open_export_window(selector, month, year):
 
-    selected_format = format_combobox.get()
+    selector.destroy()
 
-    export_window.destroy()
-
-    if selected_format == "CSV":
-
-        export_csv()
-
-    elif selected_format == "PDF":
-
-        export_pdf()
-
-    else:
-
-        export_excel()
-
-
-
-def export_report():
+    selected_month = (f"{year}-{datetime.strptime(month, '%B').month:02d}")
 
     export_window = tk.Toplevel(root)
 
@@ -1709,20 +1697,48 @@ def export_report():
 
     format_combobox.current(0)
 
-    export_button = tk.Button(
+    tk.Button(
         export_window,
         text="Export",
         command=lambda: export_selected_format(
             format_combobox,
-            export_window
+            export_window,
+            selected_month
         )
+    ).pack(pady=20)
+
+
+
+def export_selected_format(format_combobox, export_window, selected_month):
+
+    selected_format = format_combobox.get()
+
+    export_window.destroy()
+
+    if selected_format == "CSV":
+
+        export_csv(selected_month)
+
+    elif selected_format == "PDF":
+
+        export_pdf(selected_month)
+
+    else:
+
+        export_excel(selected_month)
+
+
+
+def export_report():
+
+    open_month_selector(
+        "Export Report",
+        open_export_window
     )
 
-    export_button.pack(pady=20)
 
 
-
-def export_csv():
+def export_csv(selected_month):
 
     file_path = filedialog.asksaveasfilename(
         defaultextension=".csv",
@@ -1735,7 +1751,24 @@ def export_csv():
 
     try:
 
-        shutil.copy(CSV_FILE, file_path)
+        with open(file_path, "w", newline="", encoding="utf-8") as file:
+
+            writer = csv.writer(file)
+
+            writer.writerow(CSV_HEADERS)
+
+            for row in read_transactions():
+
+                if row["Date"].startswith(selected_month):
+
+                    writer.writerow([
+                        row["ID"],
+                        row["Date"],
+                        row["Type"],
+                        row["Category"],
+                        row["Amount"],
+                        row["Description"]
+                    ])
 
         messagebox.showinfo(
             "Success",
@@ -1751,8 +1784,7 @@ def export_csv():
 
 
 
-
-def export_pdf():
+def export_pdf(selected_month):
 
     file_path = filedialog.asksaveasfilename(
         defaultextension=".pdf",
@@ -1771,12 +1803,14 @@ def export_pdf():
 
     normal_style = styles["Normal"]
     
-    table_data = [CSV_HEADERS]
+    table_data = [["Date", "Type", "Category", "Amount", "Description"]]
 
     for row in read_transactions():
 
+        if not row["Date"].startswith(selected_month):
+            continue
+
         table_data.append([
-            row["ID"],
             row["Date"],
             row["Type"],
             row["Category"],
@@ -1784,14 +1818,16 @@ def export_pdf():
             row["Description"]
         ])
 
-    title = Paragraph("Personal Finance Report", title_style)
+    month_display = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
+
+    title = Paragraph(f"Personal Finance Report ({month_display})",title_style)
 
     generated_on = Paragraph(
         f"Generated On: {datetime.now().strftime('%d %B %Y, %I:%M %p')}",
         normal_style
     )
 
-    table = Table(table_data, colWidths=[40, 70, 60, 90, 70, 180], repeatRows=1)
+    table = Table(table_data, colWidths=[90, 70, 100, 80, 240], repeatRows=1)
 
     table.setStyle(
 
@@ -1835,7 +1871,7 @@ def export_pdf():
 
 
 
-def export_excel():
+def export_excel(selected_month):
 
     file_path = filedialog.asksaveasfilename(
         defaultextension=".xlsx",
@@ -1861,6 +1897,9 @@ def export_excel():
             cell.font = Font(bold=True)
 
         for row in read_transactions():
+
+            if not row["Date"].startswith(selected_month):
+                continue
 
             worksheet.append([
                 row["ID"],
