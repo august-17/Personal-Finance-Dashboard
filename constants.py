@@ -17,7 +17,9 @@ CATEGORY_BUDGET_FILE = os.path.join(os.path.dirname(__file__), "category_budget.
 BACKUP_FILE = os.path.join(os.path.dirname(__file__), "backup_transactions.csv")
 
 MIN_AMOUNT = 1
-MAX_AMOUNT = 10000000
+MAX_AMOUNT = 10_000_000
+
+MAX_CATEGORY_LENGTH = 30
 
 MAX_DESCRIPTION_LENGTH = 50
 

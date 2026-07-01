@@ -98,52 +98,6 @@ def load_transactions():
 
 
 
-def update_summary():
-
-    try:
-
-        summary = calculate_summary()
-
-        income_label.config(text=f"Monthly Income: ₹{summary['monthly_income']:,.2f}")
-
-        expense_label.config(text=f"Monthly Expenses: ₹{summary['monthly_expenses']:,.2f}")
-
-        budget_label.config(text=f"Monthly Budget: ₹{summary['budget']:,.2f}")
-
-        balance = summary["balance"]
-
-        if balance >= 0:
-
-            balance_label.config(text=f"Current Balance: ₹{balance:,.2f}", fg="green")
-
-        else:
-
-            balance_label.config(text=f"Current Deficit: ₹{abs(balance):,.2f}", fg="red")
-
-        budget = summary["budget"]
-        remaining_budget = summary["remaining_budget"]
-
-        if budget == 0:
-
-            status_label.config(text="Budget Status: Not Set", fg="black")
-
-        elif remaining_budget >= 0:
-
-            status_label.config(text=f"Budget Status: ₹{remaining_budget:,.2f} Remaining", fg="green")
-
-        else:
-
-            status_label.config(text=f"Budget Status: ₹{abs(remaining_budget):,.2f} Exceeded", fg="red")
-
-    except Exception as e:
-
-        messagebox.showerror(
-            "CSV Error",
-            f"Unable to calculate summary.\n\n{e}"
-        )
-
-
-
 def apply_filter():
 
     for item in tree.get_children():
@@ -284,7 +238,6 @@ def undo_delete():
             "Undo Delete",
             "Nothing to undo."
         )
-
         return
     
     last_deleted_transactions = delete_history.pop()

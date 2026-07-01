@@ -6,6 +6,7 @@ from constants import *
 from storage import get_available_years
 
 
+
 def open_month_selector(root, button_text, callback):
 
     selector = tk.Toplevel(root)
@@ -57,7 +58,7 @@ def open_month_selector(root, button_text, callback):
 
 def open_export_window(root, selector, month, year, export_callback):
 
-    selected_month = (f"{year}-{datetime.strptime(month, '%B').month:02d}")
+    selected_month = f"{year}-{datetime.strptime(month, '%B').month:02d}"
 
     export_window = tk.Toplevel(root)
 

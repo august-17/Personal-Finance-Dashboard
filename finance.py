@@ -1,8 +1,23 @@
 from datetime import datetime
 
 from constants import *
-from storage import (read_transactions, get_all_categories)
-from budget import (load_budget, load_category_budgets)
+from storage import read_transactions, get_all_categories, load_budget, load_category_budgets
+
+
+
+def get_monthly_transactions(selected_month):
+
+    monthly_transactions = []
+
+    transactions = read_transactions()
+
+    for row in transactions:
+
+        if row["Date"].startswith(selected_month):
+
+            monthly_transactions.append(row)
+
+    return monthly_transactions
 
 
 def calculate_dashboard_summary():
@@ -10,25 +25,23 @@ def calculate_dashboard_summary():
     monthly_income = 0
     monthly_expenses = 0
 
-    budget = load_budget()
-
     current_month = datetime.now().strftime("%Y-%m")
 
-    transactions = read_transactions()
+    transactions = get_monthly_transactions(current_month)
+
+    budget = load_budget()
 
     for row in transactions:
 
         amount = float(row["Amount"])
 
-        if row["Date"].startswith(current_month):
+        if row["Type"] == "Income":
 
-            if row["Type"] == "Income":
+            monthly_income += amount
 
-                monthly_income += amount
+        else:
 
-            else:
-
-                monthly_expenses += amount
+            monthly_expenses += amount
 
     balance = monthly_income - monthly_expenses
 
@@ -57,13 +70,9 @@ def calculate_monthly_summary(selected_month):
     income_count = 0
     expense_count = 0
 
-    transactions = read_transactions()
+    transactions = get_monthly_transactions(selected_month)
 
     for row in transactions:
-
-        if not row["Date"].startswith(selected_month):
-
-            continue
 
         amount = float(row["Amount"])
 
@@ -106,17 +115,19 @@ def calculate_category_totals(selected_month):
 
     category_totals = {}
 
-    transactions = read_transactions()
+    transactions = get_monthly_transactions(selected_month)
 
     for row in transactions:
 
-        if (row["Type"] == "Expense" and row["Date"].startswith(selected_month)):
+        if row["Type"] != "Expense":
 
-            category = row["Category"]
+            continue
 
-            amount = float(row["Amount"])
+        category = row["Category"]
 
-            category_totals[category] = (category_totals.get(category, 0) + amount)
+        amount = float(row["Amount"])
+
+        category_totals[category] = category_totals.get(category, 0) + amount
 
     category_totals = dict(
         sorted(
@@ -141,7 +152,7 @@ def calculate_category_budget_status(selected_month):
 
     for category in all_categories:
 
-        budget = category_budgets[category]
+        budget = category_budgets.get(category, 0)
 
         spent = category_totals.get(category, 0)
 
@@ -170,7 +181,7 @@ def calculate_monthly_trend():
 
     for row in transactions:
 
-        if row["Type"] == "Expense":
+        if row["Type"] != "Expense":
 
             continue
 

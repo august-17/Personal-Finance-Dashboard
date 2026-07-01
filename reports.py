@@ -1,85 +1,14 @@
-from imports import *
-from storage import *
+import tkinter as tk
+from tkinter import messagebox
+from datetime import datetime
 
-def show_monthly_category_report(selected_month):
-
-    category_totals = calculate_category_totals(selected_month)
-
-    if not category_totals:
-
-        messagebox.showinfo(
-            "No Data",
-            "No expense data available."
-        )
-        return
-    
-    display_month = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
-
-    report_window = tk.Toplevel(root)
-
-    report_window.title("Category-Wise Spending Report")
-
-    report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
-
-    report_window.resizable(False, False)
-
-    scrollbar = tk.Scrollbar(report_window)
-
-    scrollbar.pack(side="right", fill="y")
-
-    text = tk.Text(report_window, font=REPORT_FONT, yscrollcommand=scrollbar.set)
-
-    text.pack(fill="both", expand=True, padx=10, pady=10)
-
-    scrollbar.config(command=text.yview)
-
-    enable_mousewheel_scrolling(text)
-
-    report = f"Category Report ({display_month})\n"
-
-    report += "=" * 40 + "\n\n"
-
-    report += f"{'Category':<25}{'Amount'}\n"
-
-    report += "-" * 40 + "\n"
-
-    total_expenses = 0
-
-    for category, amount in category_totals.items():
-
-        report += (
-            f"{category:<25}"
-            f"₹{amount:,.2f}\n"
-        )
-
-        total_expenses += amount
-
-    report += "-" * 40 + "\n"
-
-    report += (
-        f"{'Total Expenses':<25}"
-        f"₹{total:,.2f}"
-    )
-
-    text.insert("1.0", report)
-
-    text.config(state="disabled")
+from constants import *
+from finance import calculate_monthly_summary, calculate_category_totals, calculate_category_budget_status
+from ui_helpers import enable_mousewheel_scrolling
 
 
 
-def generate_category_report(selector, month_name, year):
-
-    month_number = datetime.strptime(month_name,"%B").month
-
-    selected_month = f"{year}-{month_number:02d}"
-
-    selector.destroy()
-
-    show_monthly_category_report(selected_month)
-
-
-
-def show_monthly_summary(selected_month):
+def show_monthly_summary(root, selected_month):
 
     summary = calculate_monthly_summary(selected_month)
 
@@ -160,8 +89,7 @@ def show_monthly_summary(selected_month):
     text.config(state="disabled")
 
 
-   
-def generate_monthly_summary(selector, month_name, year):
+def generate_monthly_summary(root, selector, month_name, year):
 
     month_number = datetime.strptime(month_name, "%B").month
 
@@ -169,11 +97,86 @@ def generate_monthly_summary(selector, month_name, year):
 
     selector.destroy()
 
-    show_monthly_summary(selected_month)
+    show_monthly_summary(root,selected_month)
 
 
+def show_monthly_category_report(root, selected_month): 
 
-def show_monthly_category_budget_status(selected_month):
+    category_totals = calculate_category_totals(selected_month)
+
+    if not category_totals:
+
+        messagebox.showinfo(
+            "No Data",
+            "No expense data available."
+        )
+        return
+    
+    display_month = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
+
+    report_window = tk.Toplevel(root)
+
+    report_window.title("Category-Wise Spending Report")
+
+    report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
+
+    report_window.resizable(False, False)
+
+    scrollbar = tk.Scrollbar(report_window)
+
+    scrollbar.pack(side="right", fill="y")
+
+    text = tk.Text(report_window, font=REPORT_FONT, yscrollcommand=scrollbar.set)
+
+    text.pack(fill="both", expand=True, padx=10, pady=10)
+
+    scrollbar.config(command=text.yview)
+
+    enable_mousewheel_scrolling(text)
+
+    report = f"Category Report ({display_month})\n"
+
+    report += "=" * 40 + "\n\n"
+
+    report += f"{'Category':<25}{'Amount'}\n"
+
+    report += "-" * 40 + "\n"
+
+    total_expenses = 0
+
+    for category, amount in category_totals.items():
+
+        report += (
+            f"{category:<25}"
+            f"₹{amount:,.2f}\n"
+        )
+
+        total_expenses += amount
+
+    report += "-" * 40 + "\n"
+
+    report += (
+        f"{'Total Expenses':<25}"
+        f"₹{total_expenses:,.2f}"
+    )
+
+    text.insert("1.0", report)
+
+    text.config(state="disabled")
+
+
+def generate_category_report(root, selector, month_name, year):
+
+    month_number = datetime.strptime(month_name,"%B").month
+
+    selected_month = f"{year}-{month_number:02d}"
+
+    selector.destroy()
+
+    show_monthly_category_report(root, selected_month)
+
+
+def show_monthly_category_budget_status(root, selected_month):
 
     budget_status = calculate_category_budget_status(selected_month)
 
@@ -183,7 +186,6 @@ def show_monthly_category_budget_status(selected_month):
             "No Budgets",
             "No category budgets have been set."
         )
-
         return
 
     display_month = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
@@ -206,11 +208,11 @@ def show_monthly_category_budget_status(selected_month):
 
     enable_mousewheel_scrolling(text)
 
-    report = (f"Category Budget Status ({display_month})\n")
+    report = f"Category Budget Status ({display_month})\n"
 
     report += "=" * 75 + "\n\n"
 
-    report = (
+    report += (
         f"{'Category':<20}"
         f"{'Budget':>15}"
         f"{'Spent':>15}"
@@ -271,8 +273,7 @@ def show_monthly_category_budget_status(selected_month):
     text.config(state="disabled")
 
 
-
-def generate_category_budget_status(selector, month_name, year):
+def generate_category_budget_status(root, selector, month_name, year):
 
     month_number = datetime.strptime(month_name, "%B").month
 
@@ -280,4 +281,4 @@ def generate_category_budget_status(selector, month_name, year):
 
     selector.destroy()
 
-    show_monthly_category_budget_status(selected_month)
+    show_monthly_category_budget_status(root, selected_month)

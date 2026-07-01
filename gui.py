@@ -1,3 +1,49 @@
+def update_summary():
+
+    try:
+
+        summary = calculate_summary()
+
+        income_label.config(text=f"Monthly Income: ₹{summary['monthly_income']:,.2f}")
+
+        expense_label.config(text=f"Monthly Expenses: ₹{summary['monthly_expenses']:,.2f}")
+
+        budget_label.config(text=f"Monthly Budget: ₹{summary['budget']:,.2f}")
+
+        balance = summary["balance"]
+
+        if balance >= 0:
+
+            balance_label.config(text=f"Current Balance: ₹{balance:,.2f}", fg="green")
+
+        else:
+
+            balance_label.config(text=f"Current Deficit: ₹{abs(balance):,.2f}", fg="red")
+
+        budget = summary["budget"]
+        remaining_budget = summary["remaining_budget"]
+
+        if budget == 0:
+
+            status_label.config(text="Budget Status: Not Set", fg="black")
+
+        elif remaining_budget >= 0:
+
+            status_label.config(text=f"Budget Status: ₹{remaining_budget:,.2f} Remaining", fg="green")
+
+        else:
+
+            status_label.config(text=f"Budget Status: ₹{abs(remaining_budget):,.2f} Exceeded", fg="red")
+
+    except Exception as e:
+
+        messagebox.showerror(
+            "CSV Error",
+            f"Unable to calculate summary.\n\n{e}"
+        )
+
+
+
 root = tk.Tk()
 root.title("Personal Finance Dashboard")
 root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
@@ -76,7 +122,7 @@ if saved_budget > 0:
 budget_button = tk.Button(
     budget_frame,
     text="Set Budget",
-    command=save_budget
+    command=lambda: save_budget(budget_entry)
 )
 
 budget_button.grid(row=0, column=2, padx=5)
@@ -85,7 +131,7 @@ budget_button.grid(row=0, column=2, padx=5)
 reset_budget_button = tk.Button(
     budget_frame,
     text="Reset Budget",
-    command=reset_budget
+    command=lambda: reset_budget(budget_entry)
 )
 
 reset_budget_button.grid(row=0, column=3, padx=5)
@@ -94,7 +140,7 @@ reset_budget_button.grid(row=0, column=3, padx=5)
 category_budget_button = tk.Button(
     budget_frame,
     text="Category Budgets",
-    command=open_category_budget_window
+    command=lambda: open_category_budget_window(root)
 )
 
 category_budget_button.grid(row=0, column=4, padx=5)
@@ -278,7 +324,13 @@ category_report_button = tk.Button(
     command=lambda: open_month_selector(
         root,
         "Show Report",
-        generate_category_report
+        lambda selector, month, year:
+            generate_category_report(
+                root,
+                selector,
+                month,
+                year
+            )
     )
 )
 
@@ -291,7 +343,13 @@ monthly_summary_button = tk.Button(
     command=lambda: open_month_selector(
         root,
         "Show Summary",
-        generate_monthly_summary
+        lambda selector, month, year:
+            generate_monthly_summary(
+                root,
+                selector,
+                month,
+                year
+            )
     )
 )
 
@@ -304,7 +362,13 @@ category_budget_status_button = tk.Button(
     command=lambda: open_month_selector(
         root,
         "Show Status",
-        generate_category_budget_status
+        lambda selector, month, year:
+            generate_category_budget_status(
+                root,
+                selector,
+                month,
+                year
+            )
     )
 )
 

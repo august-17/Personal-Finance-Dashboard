@@ -1,7 +1,19 @@
-from imports import *
+import csv
+from datetime import datetime
+from tkinter import filedialog, messagebox
+
+from openpyxl import Workbook
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
 from constants import *
-
-
+from finance import get_monthly_transactions
+from dialogs import open_month_selector, open_export_window
 
 
 
@@ -24,7 +36,6 @@ def export_selected_format(format_combobox, export_window, selected_month):
         export_excel(selected_month)
 
 
-
 def export_report(root):
 
     open_month_selector(
@@ -33,7 +44,6 @@ def export_report(root):
         lambda selector, month, year: 
             open_export_window(root, selector, month, year, export_selected_format)
     )
-
 
 
 def export_csv(selected_month):
@@ -47,6 +57,16 @@ def export_csv(selected_month):
     if not file_path:
 
         return
+    
+    transactions = get_monthly_transactions(selected_month)
+
+    if not transactions:
+
+        messagebox.showinfo(
+            "No Data",
+            "No transactions available for the selected month."
+        )
+        return
 
     try:
 
@@ -56,20 +76,16 @@ def export_csv(selected_month):
 
             writer.writerow(CSV_HEADERS)
 
-            transactions = read_transactions()
-
             for row in transactions:
 
-                if row["Date"].startswith(selected_month):
-
-                    writer.writerow([
-                        row["ID"],
-                        row["Date"],
-                        row["Type"],
-                        row["Category"],
-                        row["Amount"],
-                        row["Description"]
-                    ])
+                writer.writerow([
+                    row["ID"],
+                    row["Date"],
+                    row["Type"],
+                    row["Category"],
+                    row["Amount"],
+                    row["Description"]
+                ])
 
         messagebox.showinfo(
             "Success",
@@ -84,7 +100,6 @@ def export_csv(selected_month):
         )
 
 
-
 def export_pdf(selected_month):
 
     file_path = filedialog.asksaveasfilename(
@@ -97,6 +112,16 @@ def export_pdf(selected_month):
 
         return
     
+    transactions = get_monthly_transactions(selected_month)
+
+    if not transactions:
+
+        messagebox.showinfo(
+            "No Data",
+            "No transactions available for the selected month."
+        )
+        return
+    
     pdf = SimpleDocTemplate(file_path, pagesize=landscape(A4))
 
     styles = getSampleStyleSheet()
@@ -107,13 +132,7 @@ def export_pdf(selected_month):
     
     table_data = [["Date", "Type", "Category", "Amount", "Description"]]
 
-    transactions = read_transactions()
-
     for row in transactions:
-
-        if not row["Date"].startswith(selected_month):
-
-            continue
 
         table_data.append([
             row["Date"],
@@ -125,7 +144,7 @@ def export_pdf(selected_month):
 
     month_display = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
 
-    title = Paragraph(f"Personal Finance Report ({month_display})",title_style)
+    title = Paragraph(f"Personal Finance Report ({month_display})", title_style)
 
     generated_on = Paragraph(
         f"Generated On: {datetime.now().strftime('%d %B %Y, %I:%M %p')}",
@@ -175,7 +194,6 @@ def export_pdf(selected_month):
         )
 
 
-
 def export_excel(selected_month):
 
     file_path = filedialog.asksaveasfilename(
@@ -186,6 +204,16 @@ def export_excel(selected_month):
 
     if not file_path:
 
+        return
+    
+    transactions = get_monthly_transactions(selected_month)
+
+    if not transactions:
+
+        messagebox.showinfo(
+            "No Data",
+            "No transactions available for the selected month."
+        )
         return
 
     try:
@@ -202,13 +230,7 @@ def export_excel(selected_month):
 
             cell.font = Font(bold=True)
 
-        transactions = read_transactions()
-
         for row in transactions:
-
-            if not row["Date"].startswith(selected_month):
-                
-                continue
 
             worksheet.append([
                 row["ID"],
@@ -235,11 +257,9 @@ def export_excel(selected_month):
 
                 try:
 
-                    if len(str(cell.value)) > max_length:
+                    max_length = max(max_length, len(str(cell.value)))
 
-                        max_length = len(str(cell.value))
-
-                except:
+                except Exception:
 
                     pass
 

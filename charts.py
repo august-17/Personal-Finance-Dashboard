@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from tkinter import messagebox
 
-from constants import *
-from finance import (calculate_monthly_trend, calculate_expense_breakdown)
+from finance import calculate_monthly_trend, calculate_expense_breakdown
+
+
 
 def show_monthly_trend():
 
@@ -75,7 +76,7 @@ def show_monthly_expense_breakdown(selected_month):
     )
 
     plt.title(
-        f"Expense Breakdown by Category ({display_month})"
+        f"Expense Breakdown by Category ({display_month})\n"
         f"Total Expenses: ₹{total_expense:,.2f}"  
     )
 
