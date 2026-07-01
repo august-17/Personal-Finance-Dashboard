@@ -1,8 +1,8 @@
 from datetime import datetime
 
 from constants import *
-from storage import read_transactions, get_all_categories
-from budget import load_budget, load_category_budgets
+from storage import (read_transactions, get_all_categories)
+from budget import (load_budget, load_category_budgets)
 
 
 def calculate_dashboard_summary():

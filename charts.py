@@ -3,7 +3,7 @@ from datetime import datetime
 from tkinter import messagebox
 
 from constants import *
-from finance import calculate_monthly_trend, calculate_expense_breakdown
+from finance import (calculate_monthly_trend, calculate_expense_breakdown)
 
 def show_monthly_trend():
 
