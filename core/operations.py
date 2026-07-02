@@ -10,28 +10,28 @@ from constants import (
     CUSTOM_CATEGORY
 )
 
-from storage import (
+from core.storage import (
     create_backup, 
     get_next_id, 
     read_transactions
 )
 
-from validation import (
+from core.validation import (
     validate_amount, 
     validate_description, 
     get_category
 )
 
-from budgets import (
+from core.budgets import (
     check_budget_warning, 
     check_category_budget_warning
 )
 
-from ui_helpers import (
+from gui.ui_helpers import (
     insert_transaction_row
 )
 
-from gui_actions import (
+from gui.gui_actions import (
     update_summary, 
     sort_treeview, 
     clear_inputs,

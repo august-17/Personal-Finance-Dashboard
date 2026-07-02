@@ -8,22 +8,22 @@ from constants import (
     BUDGET_HEIGHT
 )
 
-from storage import (
+from core.storage import (
     write_budget, 
     load_category_budgets, 
     save_category_budgets, 
     get_all_categories
 )
 
-from validation import (
+from core.validation import (
     is_budget_exceeded, 
     is_category_budget_exceeded, 
     validate_numeric_amount
 )
 
-from gui_actions import update_summary
+from gui.gui_actions import update_summary
 
-from ui_helpers import enable_mousewheel_scrolling
+from gui.ui_helpers import enable_mousewheel_scrolling
 
 
 

@@ -13,9 +13,9 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 from constants import CSV_HEADERS
 
-from finance import get_monthly_transactions
+from core.finance import get_monthly_transactions
 
-from dialogs import (
+from gui.dialogs import (
     open_month_selector, 
     open_export_window
 )

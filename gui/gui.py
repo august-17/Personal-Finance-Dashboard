@@ -13,35 +13,35 @@ from constants import (
     ODD_ROW_COLOR
 )
 
-from storage import (
+from core.storage import (
     load_budget,
     get_all_categories
 )
 
-from dialogs import open_month_selector
+from gui.dialogs import open_month_selector
 
-from reports import (
+from gui.reports import (
     generate_monthly_summary, 
     generate_category_report, 
     generate_category_budget_status
 )
 
-from charts import (
+from gui.charts import (
     show_monthly_trend, 
     generate_expense_breakdown
 )
 
-from exports import export_report
+from gui.exports import export_report
 
-from budgets import (
+from core.budgets import (
     save_budget, 
     reset_budget, 
     open_category_budget_window
 )
 
-from ui_helpers import enable_mousewheel_scrolling
+from gui.ui_helpers import enable_mousewheel_scrolling
 
-from operations import (
+from core.operations import (
     add_transaction,
     load_transactions,
     delete_transaction,
@@ -52,7 +52,7 @@ from operations import (
     reset_filter
 )
 
-from gui_actions import (
+from gui.gui_actions import (
     update_sort_headers,
     update_summary,
     clear_inputs

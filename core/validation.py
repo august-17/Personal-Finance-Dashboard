@@ -10,12 +10,12 @@ from constants import (
     CUSTOM_CATEGORY,
 )
 
-from storage import (
+from core.storage import (
     load_budget, 
     load_category_budgets
 )
 
-from finance import get_monthly_transactions
+from core.finance import get_monthly_transactions
 
 
 

@@ -8,15 +8,15 @@ from constants import (
     REPORT_HEIGHT
 )
 
-from dialogs import get_selected_month
+from gui.dialogs import get_selected_month
 
-from finance import (
+from core.finance import (
     calculate_monthly_summary, 
     calculate_category_totals, 
     calculate_category_budget_status
 )
 
-from ui_helpers import enable_mousewheel_scrolling
+from gui.ui_helpers import enable_mousewheel_scrolling
 
 
 

@@ -2,9 +2,9 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from tkinter import messagebox
 
-from dialogs import get_selected_month
+from gui.dialogs import get_selected_month
 
-from finance import (
+from core.finance import (
     calculate_monthly_trend, 
     calculate_expense_breakdown
 )

@@ -8,9 +8,9 @@ from constants import (
     SORTABLE_COLUMNS
 )
 
-from storage import get_all_categories
+from core.storage import get_all_categories
 
-from finance import calculate_dashboard_summary
+from core.finance import calculate_dashboard_summary
 
 import app_state
 

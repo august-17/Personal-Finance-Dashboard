@@ -14,13 +14,14 @@ CSV_HEADERS = list(COLUMNS)
 
 CUSTOM_CATEGORY = "Other"
 
-CSV_FILE = os.path.join(os.path.dirname(__file__), "transactions.csv")
+BASE_DIR = os.path.dirname(__file__)
 
-BUDGET_FILE = os.path.join(os.path.dirname(__file__), "budget.txt")
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
-CATEGORY_BUDGET_FILE = os.path.join(os.path.dirname(__file__), "category_budget.json")
-
-BACKUP_FILE = os.path.join(os.path.dirname(__file__), "backup_transactions.csv")
+CSV_FILE = os.path.join(DATA_DIR, "transactions.csv")
+BACKUP_FILE = os.path.join(DATA_DIR, "backup_transactions.csv")
+BUDGET_FILE = os.path.join(DATA_DIR, "budget.txt")
+CATEGORY_BUDGET_FILE = os.path.join(DATA_DIR, "category_budget.json")
 
 MIN_AMOUNT = 1
 MAX_AMOUNT = 10_000_000

@@ -1,6 +1,6 @@
-from storage import create_csv_file
+from core.storage import create_csv_file
 
-from gui import create_gui
+from gui.gui import create_gui
 
 
 def main():
