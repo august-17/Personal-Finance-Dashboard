@@ -1,8 +1,8 @@
 # Personal Finance Dashboard
 
-A desktop-based personal finance management application built with **Python** and **Tkinter** that enables users to efficiently track income and expenses, manage budgets, visualize spending patterns, and generate financial reports.
+A desktop application built with **Python** and **Tkinter** for managing personal finances through transaction tracking, budgeting, financial reporting, data visualization, and report exporting.
 
-The application provides an intuitive graphical interface with advanced budgeting tools, reporting capabilities, data visualization, and export functionality to help users monitor and analyze their financial activities.
+The application follows a modular architecture with a clear separation between business logic, user interface, data management, and validation, making it scalable, maintainable, and easy to extend.
 
 ---
 
@@ -12,163 +12,189 @@ The application provides an intuitive graphical interface with advanced budgetin
 
 - Add income and expense transactions
 - Edit existing transactions
-- Delete multiple transactions
+- Delete single or multiple transactions
 - Undo deleted transactions
 - Automatic transaction ID generation
 - Calendar-based date selection
-- Support for custom expense categories
-- Automatic CSV-based data storage
+- Automatic backup before every data modification
 
-### Dashboard Overview
+### Category Management
 
-- Total Income
-- Total Expenses
-- Current Balance / Deficit
-- Monthly Budget
-- Remaining or Exceeded Budget Status
+- Built-in expense categories
+- Support for unlimited custom categories
+- Automatic addition of custom categories to the category list
+- Automatic removal of unused custom categories
+- Dynamic category list updates without restarting the application
 
 ### Budget Management
 
-#### Monthly Budget
+- Monthly budget management
+- Category-wise budget management
+- Budget warning before exceeding the monthly limit
+- Category budget warning before exceeding category limits
+- Budget reset functionality
+- Remaining budget tracking
+- Budget status monitoring
 
-- Set monthly spending limits
-- Reset monthly budget
-- Automatic budget tracking
-- Warning before exceeding the monthly budget
+### Dashboard
 
-#### Category Budgets
+The dashboard updates automatically after every transaction and displays:
 
-- Individual budgets for each category
-- Support for dynamically created custom categories
-- Category-specific overspending warnings
-- Reset individual category budgets
+- Monthly Income
+- Monthly Expenses
+- Monthly Budget
+- Current Balance
+- Remaining Budget
+- Budget Status
 
-### Search & Filtering
+### Search and Filtering
 
-- Real-time transaction search
+- Instant transaction search
+- Search by:
+  - Date
+  - Transaction Type
+  - Category
+  - Amount
+  - Description
 - Filter transactions by type
-- Reset filters instantly
-- Optimized debounced searching for improved responsiveness
+- One-click filter reset
+- Debounced search for improved performance
+
+### Transaction Table
+
+- Sort by Date
+- Sort by Amount
+- Sort by Category
+- Ascending and descending sorting
+- Visual sort indicators
+- Recent transactions displayed first for identical dates
+- Alternating row colors for improved readability
 
 ### Reports
 
-Generate reports for any selected month:
+Generate detailed monthly reports including:
 
 - Monthly Financial Summary
 - Category-wise Spending Report
 - Category Budget Status Report
 
+Each report includes:
+
+- Total Income
+- Total Expenses
+- Net Savings
+- Transaction Counts
+- Budget Utilization
+- Category-wise Spending
+- Remaining Budget
+
 ### Data Visualization
-
-#### Expense Breakdown
-
-- Category-wise pie chart
-- Automatic grouping of very small categories into **Others**
-- Percentage-based expense distribution
 
 #### Monthly Expense Trend
 
-- Line chart showing monthly expenses
-- Continuous timeline across months
-- Automatic handling of months without transactions
+- Monthly expense trend using a line chart
+- Automatically handles months with no transactions
 
-### Export Options
+#### Expense Breakdown
 
-Export monthly financial reports in:
+- Category-wise expense distribution using a pie chart
+- Small categories are automatically grouped into **Others**
+
+### Report Export
+
+Export monthly reports in:
 
 - CSV
 - PDF
 - Microsoft Excel (.xlsx)
 
-Generated reports include professionally formatted tables suitable for sharing and record keeping.
-
-### Sorting
-
-Sortable transaction table by:
-
-- Date
-- Amount
-- Category
-
-Supports both ascending and descending order.
-
-### Data Protection
-
-- Automatic backup before editing, deleting, or adding transactions
-- Local data storage
-- Undo functionality for deleted transactions
-
 ### Input Validation
 
-Comprehensive validation for:
+- Numeric amount validation
+- Minimum and maximum transaction limits
+- Description length validation
+- Custom category validation
+- Empty field validation
+- Invalid character validation
 
-- Amount limits
-- Numeric inputs
-- Description length
-- Custom category names
-- Invalid characters
-- Empty fields
+### Keyboard Shortcuts
 
----
-
-## Technology Stack
-
-| Category | Technology |
-|----------|------------|
-| Language | Python 3 |
-| GUI Framework | Tkinter |
-| Calendar Widget | tkcalendar |
-| Charts | Matplotlib |
-| PDF Reports | ReportLab |
-| Excel Reports | OpenPyXL |
-| Data Storage | CSV, JSON |
+| Shortcut | Action |
+|----------|--------|
+| Enter | Add Transaction |
+| Ctrl + S | Save Changes |
+| Ctrl + E | Edit Transaction |
+| Delete | Delete Transaction |
+| Ctrl + Z | Undo Delete |
+| Ctrl + F | Focus Search |
+| Esc | Clear Input Fields |
 
 ---
 
 ## Project Structure
 
-```
+```text
 Personal-Finance-Dashboard/
 │
 ├── main.py
-├── transactions.csv
-├── backup_transactions.csv
-├── budget.txt
-├── category_budget.json
+├── constants.py
+├── app_state.py
+│
+├── core/
+│   ├── budgets.py
+│   ├── finance.py
+│   ├── operations.py
+│   ├── storage.py
+│   └── validation.py
+│
+├── gui/
+│   ├── charts.py
+│   ├── dialogs.py
+│   ├── export.py
+│   ├── gui.py
+│   ├── gui_actions.py
+│   ├── reports.py
+│   └── ui_helpers.py
+│
+├── data/
+│   ├── transactions.csv
+│   ├── backup_transactions.csv
+│   ├── budget.txt
+│   └── category_budget.json
+│
 ├── requirements.txt
-├── README.md
-└── screenshots/
+└── README.md
 ```
+
+---
+
+## Requirements
+
+- Python 3.10 or later
 
 ---
 
 ## Installation
 
-Clone the repository:
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/august-17/Personal-Finance-Dashboard.git
 ```
 
-Navigate to the project directory:
+### 2. Navigate to the project directory
 
 ```bash
 cd Personal-Finance-Dashboard
 ```
 
-Install the required dependencies:
+### 3. Install the required dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Or install manually:
-
-```bash
-pip install tkcalendar matplotlib reportlab openpyxl
-```
-
-Run the application:
+### 4. Run the application
 
 ```bash
 python main.py
@@ -176,43 +202,68 @@ python main.py
 
 ---
 
+## Usage
+
+1. Launch the application.
+2. Add income and expense transactions.
+3. Set monthly and category-wise budgets.
+4. Monitor the dashboard for real-time financial insights.
+5. Search, filter, edit, or delete transactions.
+6. Generate reports and visualizations.
+7. Export monthly reports in CSV, PDF, or Excel format.
+
+---
+
+## Dependencies
+
+- Python
+- Tkinter
+- tkcalendar
+- Matplotlib
+- OpenPyXL
+- ReportLab
+
+---
+
 ## Data Storage
 
 The application stores all information locally.
 
-| File | Description |
-|------|-------------|
-| transactions.csv | Transaction database |
-| backup_transactions.csv | Automatic backup |
-| budget.txt | Monthly budget |
-| category_budget.json | Category-wise budgets |
+| File | Purpose |
+|------|---------|
+| transactions.csv | Stores transaction records |
+| backup_transactions.csv | Automatic backup of transaction data |
+| budget.txt | Stores the monthly budget |
+| category_budget.json | Stores category-wise budgets |
 
 ---
 
-## Keyboard Shortcuts
+## Design Highlights
 
-| Shortcut | Action |
-|----------|--------|
-| **Enter** | Add Transaction |
-| **Ctrl + S** | Save Changes |
-| **Ctrl + E** | Edit Transaction |
-| **Delete** | Delete Selected Transaction(s) |
-| **Ctrl + Z** | Undo Delete |
-| **Ctrl + F** | Focus Search |
-| **Esc** | Clear Input Fields |
+- Modular architecture with clear separation of business logic and user interface
+- Automatic transaction backup before every data modification
+- Dynamic custom category management
+- Monthly and category-wise budgeting
+- Real-time dashboard updates
+- Interactive reports and charts
+- Multiple export formats
+- Keyboard shortcuts for improved productivity
+- Clean, scalable, and maintainable codebase
 
 ---
 
 ## Future Enhancements
 
-- Recurring Transactions
-- Savings Goals
-- Password Protection
-- SQLite Database Support
-- Cloud Synchronization
-- Dark Mode
-- Multi-user Profiles
-- Expense Forecasting using Machine Learning
+- SQLite database integration
+- User authentication
+- Multiple user profiles
+- Recurring transactions
+- Savings goals
+- Expense forecasting
+- Cloud synchronization
+- Dark mode
+- Dashboard customization
+- Import transactions from CSV and Excel
 
 ---
 
