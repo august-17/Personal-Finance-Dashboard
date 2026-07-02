@@ -257,7 +257,6 @@ The application stores all information locally.
 - SQLite database integration
 - User authentication
 - Multiple user profiles
-- Recurring transactions
 - Savings goals
 - Expense forecasting
 - Cloud synchronization
@@ -271,5 +270,5 @@ The application stores all information locally.
 
 **August Kumar Sasmal**
 
-B.Tech Computer Science & Engineering
+B.Tech Computer Science & Engineering<br>
 Manipal Institute of Technology, Manipal
