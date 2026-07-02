@@ -80,14 +80,16 @@ def load_transactions():
 
         for row in transactions:
 
-            insert_row((
+            insert_row(
+                tree, (
                 row["ID"],
                 row["Date"],
                 row["Type"],
                 row["Category"],
                 row["Amount"],
                 row["Description"]
-            ))
+                )
+            )
 
     except Exception as e:
 
@@ -130,14 +132,16 @@ def apply_filter():
 
         if matches_search and matches_type:
                 
-            insert_row((
+            insert_row(
+                tree, (
                 row["ID"],
                 row["Date"],
                 row["Type"],
                 row["Category"],
                 row["Amount"],
                 row["Description"]
-            ))
+                )
+            )
 
     if sort_column is not None:
 
@@ -403,32 +407,4 @@ def save_changes():
         "Transaction updated successfully."
     )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 create_csv_file()
-
-
