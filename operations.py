@@ -1,11 +1,13 @@
 import csv
 import tkinter as tk
 from tkinter import messagebox
+from datetime import datetime
 
 from constants import (
     CSV_FILE,
     CSV_HEADERS,
-    CATEGORIES
+    CATEGORIES,
+    CUSTOM_CATEGORY
 )
 
 from storage import (
@@ -32,7 +34,8 @@ from ui_helpers import (
 from gui_actions import (
     update_summary, 
     sort_treeview, 
-    clear_inputs
+    clear_inputs,
+    refresh_category_combobox
 )
 
 import app_state
@@ -81,6 +84,8 @@ def add_transaction():
 
         writer.writerow([transaction_id, date, transaction_type, category, amount, description])
 
+    refresh_category_combobox()
+
     clear_inputs()
 
     update_summary()
@@ -94,7 +99,13 @@ def load_transactions():
 
         transactions = read_transactions()
 
-        transactions.sort(key=lambda row: row["Date"], reverse=True)
+        transactions.sort(
+            key=lambda row: (
+                datetime.strptime(row["Date"], "%Y-%m-%d"), 
+                int(row["ID"])
+            ),
+            reverse=True
+        )
 
         for row in transactions:
 
@@ -207,6 +218,8 @@ def delete_transaction():
 
     app_state.delete_history.append(current_delete)
 
+    refresh_category_combobox()
+
     apply_filter()
 
     update_summary()
@@ -245,6 +258,8 @@ def undo_delete():
     if not app_state.delete_history:
 
         app_state.undo_delete_button.config(state="disabled")
+
+    refresh_category_combobox()
 
     apply_filter()
 
@@ -295,7 +310,7 @@ def edit_transaction():
 
     else:
 
-        app_state.category_combobox.set("Other")
+        app_state.category_combobox.set(CUSTOM_CATEGORY)
 
         app_state.custom_category_label.grid(row=5, column=0, padx=5, pady=5)
         app_state.custom_category_entry.grid(row=5, column=1, padx=5, pady=5)
@@ -373,11 +388,13 @@ def save_changes():
 
     app_state.editing_transaction_id = None
 
-    apply_filter()
+    refresh_category_combobox()
+
+    clear_inputs()
 
     update_summary()
 
-    clear_inputs()
+    apply_filter()
 
     messagebox.showinfo(
         "Success",

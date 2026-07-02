@@ -1,21 +1,22 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
-from datetime import datetime
+from tkinter import ttk
 from tkcalendar import DateEntry
 
 from constants import (
-    SORTABLE_COLUMNS,
+    CUSTOM_CATEGORY,
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
     TITLE_FONT,
     LABEL_FONT,
-    CATEGORIES,
     COLUMNS,
     EVEN_ROW_COLOR,
     ODD_ROW_COLOR
 )
 
-from storage import load_budget
+from storage import (
+    load_budget,
+    get_all_categories
+)
 
 from dialogs import open_month_selector
 
@@ -329,7 +330,7 @@ def create_gui():
 
     app_state.category_combobox = ttk.Combobox(
         input_frame,
-        values=CATEGORIES,
+        values=get_all_categories() + [CUSTOM_CATEGORY],
         state="readonly",
         width=20
     )

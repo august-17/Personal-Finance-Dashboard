@@ -3,9 +3,12 @@ from tkinter import messagebox
 from datetime import datetime
 
 from constants import (
+    CUSTOM_CATEGORY,
     COLUMNS, 
     SORTABLE_COLUMNS
 )
+
+from storage import get_all_categories
 
 from finance import calculate_dashboard_summary
 
@@ -85,7 +88,10 @@ def sort_treeview(column, toggle=True):
     elif column == "Date":
 
         data.sort(
-            key=lambda x: datetime.strptime(x[0][1], "%Y-%m-%d"),
+            key=lambda x: (
+                datetime.strptime(x[0][1], "%Y-%m-%d"),
+                int(x[0][0])
+            ),
             reverse=app_state.sort_reverse.get(column, False)
         )
 
@@ -126,6 +132,16 @@ def clear_inputs():
     app_state.date_entry.set_date(datetime.now())
 
     app_state.type_combobox.current(0)
+
+
+# ========================================
+# Category List Refresher
+# ========================================
+
+def refresh_category_combobox():
+
+    app_state.category_combobox["values"] = get_all_categories() + [CUSTOM_CATEGORY]
+
 
 # ========================================
 # Dashboard Summary
