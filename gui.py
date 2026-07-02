@@ -1,664 +1,646 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+from datetime import datetime
+from tkcalendar import DateEntry
+
+from constants import (
+    SORTABLE_COLUMNS,
+    WINDOW_WIDTH,
+    WINDOW_HEIGHT,
+    TITLE_FONT,
+    LABEL_FONT,
+    CATEGORIES,
+    COLUMNS,
+    EVEN_ROW_COLOR,
+    ODD_ROW_COLOR
+)
+
+from storage import load_budget
+
+from dialogs import open_month_selector
+
+from reports import (
+    generate_monthly_summary, 
+    generate_category_report, 
+    generate_category_budget_status
+)
+
+from charts import (
+    show_monthly_trend, 
+    generate_expense_breakdown
+)
+
+from exports import export_report
+
+from budgets import (
+    save_budget, 
+    reset_budget, 
+    open_category_budget_window
+)
+
+from ui_helpers import enable_mousewheel_scrolling
+
+from operations import (
+    add_transaction,
+    load_transactions,
+    delete_transaction,
+    edit_transaction,
+    save_changes,
+    undo_delete,
+    apply_filter,
+    reset_filter
+)
+
+from gui_actions import (
+    update_sort_headers,
+    update_summary,
+    clear_inputs
+)
+
+import app_state
+
+
+
+# ========================================
+# Keyboard Shortcuts
+# ========================================
+
 def shortcut_add(event=None):
     add_transaction()
+
 
 def shortcut_save(event=None):
     save_changes()
 
+
 def shortcut_delete(event=None):
     delete_transaction()
+
 
 def shortcut_undo(event=None):
     undo_delete()
 
+
 def shortcut_edit(event=None):
     edit_transaction()
 
+
 def shortcut_search(event=None):
-    search_entry.focus_set()
+    app_state.search_entry.focus_set()
+
 
 def shortcut_clear(event=None):
     clear_inputs()
 
 
-def update_sort_headers():
-
-    sortable_columns = ("Date", "Amount", "Category")
-
-    for column in columns:
-
-        heading = column
-
-        if column == sort_column:
-
-            if sort_reverse.get(column, False):
-
-                heading = f"{column} ▼"
-
-            else:
-
-                heading = f"{column} ▲"
-
-        if column in sortable_columns:
-
-            tree.heading(
-                column,
-                text=heading,
-                command=lambda c=column: sort_treeview(c)
-            )
-
-        else:
-
-            tree.heading(
-                column,
-                text=heading
-            )
-
-
-def sort_treeview(column, toggle=True):
-
-    global sort_column
-
-    if toggle:
-
-        if sort_column == column:
-
-            sort_reverse[column] = not sort_reverse.get(column, False)
-
-        else:
-
-            sort_column = column
-
-            sort_reverse.setdefault(column, False)
-
-    else:
-
-        sort_column = column
-
-    data = []
-
-    for item in tree.get_children():
-
-        values = tree.item(item)["values"]
-
-        data.append((values, item))
-
-    if column == "Amount":
-
-        data.sort(
-            key=lambda x: float(x[0][4]),
-            reverse=sort_reverse.get(column, False)
-        )
-
-    elif column == "Date":
-
-        data.sort(
-            key=lambda x: datetime.strptime(x[0][1], "%Y-%m-%d"),
-            reverse=sort_reverse.get(column, False)
-        )
-
-    elif column == "Category":
-
-        data.sort(
-            key=lambda x: x[0][3].lower(),
-            reverse=sort_reverse.get(column, False)
-        )
-
-    else:
-
-        return
-
-    for index, (_, item) in enumerate(data):
-
-        tree.move(item, "", index)
-
-    update_sort_headers()
-
+# ========================================
+# Input Helpers
+# ========================================
 
 def handle_category_change(event):
 
-    if category_combobox.get() == "Other":
+    if app_state.category_combobox.get() == "Other":
 
-        custom_category_label.grid(row=5, column=0, padx=5, pady=5)
-        custom_category_entry.grid(row=5, column=1, padx=5, pady=5)
+        app_state.custom_category_label.grid(row=5, column=0, padx=5, pady=5)
+        app_state.custom_category_entry.grid(row=5, column=1, padx=5, pady=5)
 
     else:
 
-        custom_category_label.grid_remove()
-        custom_category_entry.grid_remove()
-
-
-def clear_inputs():
-
-    amount_entry.delete(0, tk.END)
-
-    description_entry.delete(0, tk.END)
-
-    custom_category_entry.delete(0, tk.END)
-
-    category_combobox.current(0)
-
-    custom_category_label.grid_remove()
-    custom_category_entry.grid_remove()
-
-    date_entry.set_date(datetime.now())
-
-    type_combobox.current(0)
+        app_state.custom_category_label.grid_remove()
+        app_state.custom_category_entry.grid_remove()
 
 
 def debounce_search(event=None):
 
-    global search_after_id
+    if app_state.search_after_id is not None:
 
-    if search_after_id is not None:
+        app_state.root.after_cancel(app_state.search_after_id)
 
-        root.after_cancel(search_after_id)
+    app_state.search_after_id = app_state.root.after(250, apply_filter)
 
-    search_after_id = root.after(250, apply_filter)
 
+# ========================================
+# Report Callbacks
+# ========================================
 
-def update_summary():
+def open_summary_selector():
 
-    try:
-
-        summary = calculate_summary()
-
-        income_label.config(text=f"Monthly Income: ₹{summary['monthly_income']:,.2f}")
-
-        expense_label.config(text=f"Monthly Expenses: ₹{summary['monthly_expenses']:,.2f}")
-
-        budget_label.config(text=f"Monthly Budget: ₹{summary['budget']:,.2f}")
-
-        balance = summary["balance"]
-
-        if balance >= 0:
-
-            balance_label.config(text=f"Current Balance: ₹{balance:,.2f}", fg="green")
-
-        else:
-
-            balance_label.config(text=f"Current Deficit: ₹{abs(balance):,.2f}", fg="red")
-
-        budget = summary["budget"]
-        remaining_budget = summary["remaining_budget"]
-
-        if budget == 0:
-
-            status_label.config(text="Budget Status: Not Set", fg="black")
-
-        elif remaining_budget >= 0:
-
-            status_label.config(text=f"Budget Status: ₹{remaining_budget:,.2f} Remaining", fg="green")
-
-        else:
-
-            status_label.config(text=f"Budget Status: ₹{abs(remaining_budget):,.2f} Exceeded", fg="red")
-
-    except Exception as e:
-
-        messagebox.showerror(
-            "CSV Error",
-            f"Unable to calculate summary.\n\n{e}"
-        )
-
-
-
-root = tk.Tk()
-root.title("Personal Finance Dashboard")
-root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
-root.resizable(True, True)
-
-# Title
-title_label = tk.Label(
-    root,
-    text="Personal Finance Dashboard",
-    font=TITLE_FONT
-)
-title_label.pack(pady=10)
-
-#Summary Frame
-summary_frame = tk.Frame(root)
-
-summary_frame.pack(pady=10)
-
-income_label = tk.Label(
-    summary_frame,
-    text="Total Income: ₹0.00",
-    font=LABEL_FONT
-)
-
-income_label.grid(row=0, column=0, padx=20)
-
-expense_label = tk.Label(
-    summary_frame,
-    text="Total Expenses: ₹0.00",
-    font=LABEL_FONT
-)
-
-expense_label.grid(row=0, column=1, padx=20)
-
-balance_label = tk.Label(
-    summary_frame,
-    text="Current Balance: ₹0.00",
-    font=LABEL_FONT
-)
-
-balance_label.grid(row=0, column=2, padx=20)
-
-budget_label = tk.Label(
-    summary_frame,
-    text="Monthly Budget: ₹0.00",
-    font=LABEL_FONT
-)
-
-budget_label.grid(row=1, column=0, padx=20)
-
-status_label = tk.Label(
-    summary_frame,
-    text="Budget Status: Not Set",
-    font=LABEL_FONT
-)
-
-status_label.grid(row=1, column=2, padx=20)
-
-# Budget Frame
-budget_frame = tk.Frame(root)
-
-budget_frame.pack(pady=5)
-
-tk.Label(budget_frame, text="Monthly Budget").grid(row=0, column=0, padx=5)
-
-budget_entry = tk.Entry(budget_frame, width=20)
-
-budget_entry.grid(row=0, column=1, padx=5)
-
-saved_budget = load_budget()
-
-if saved_budget > 0:
-    budget_entry.insert(0, str(saved_budget))
-
-# Set Budget Button
-budget_button = tk.Button(
-    budget_frame,
-    text="Set Budget",
-    command=lambda: save_budget(budget_entry)
-)
-
-budget_button.grid(row=0, column=2, padx=5)
-
-# Reset Budget Button
-reset_budget_button = tk.Button(
-    budget_frame,
-    text="Reset Budget",
-    command=lambda: reset_budget(budget_entry)
-)
-
-reset_budget_button.grid(row=0, column=3, padx=5)
-
-# Category Budgets Button
-category_budget_button = tk.Button(
-    budget_frame,
-    text="Category Budgets",
-    command=lambda: open_category_budget_window(root)
-)
-
-category_budget_button.grid(row=0, column=4, padx=5)
-
-# Input Frame
-input_frame = tk.Frame(root)
-input_frame.pack(pady=10)
-
-# Date
-tk.Label(input_frame, text="Date").grid(row=0, column=0, padx=5, pady=5)
-
-date_entry = DateEntry(
-    input_frame,
-    width=20,
-    date_pattern="yyyy-mm-dd"
-)
-
-date_entry.grid(row=0, column=1, padx=5, pady=5)
-
-# Type
-tk.Label(input_frame, text="Type").grid(row=1, column=0, padx=5, pady=5)
-
-type_combobox = ttk.Combobox(
-    input_frame,
-    values=["Expense", "Income"],
-    state="readonly",
-    width=20
-)
-type_combobox.grid(row=1, column=1, padx=5, pady=5)
-type_combobox.current(0)
-
-# Category
-tk.Label(input_frame, text="Category").grid(row=2, column=0, padx=5, pady=5)
-
-category_combobox = ttk.Combobox(
-    input_frame,
-    values=CATEGORIES,
-    state="readonly",
-    width=20
-)
-category_combobox.grid(row=2, column=1, padx=5, pady=5)
-category_combobox.current(0)
-
-#Custom category
-custom_category_label = tk.Label(input_frame, text="Custom Category")
-custom_category_entry = tk.Entry(input_frame, width=23)
-
-custom_category_label.grid(row=5, column=0, padx=5, pady=5)
-custom_category_entry.grid(row=5, column=1, padx=5, pady=5)
-
-custom_category_label.grid_remove()
-custom_category_entry.grid_remove()
-
-# Amount
-tk.Label(input_frame, text="Amount").grid(row=3, column=0, padx=5, pady=5)
-
-amount_entry = tk.Entry(input_frame, width=23)
-amount_entry.grid(row=3, column=1, padx=5, pady=5)
-
-# Description
-tk.Label(input_frame, text="Description").grid(row=4, column=0, padx=5, pady=5)
-
-description_entry = tk.Entry(input_frame, width=23)
-description_entry.grid(row=4, column=1, padx=5, pady=5)
-
-category_combobox.bind(
-    "<<ComboboxSelected>>",
-    handle_category_change
-)
-
-# Add Transaction Button
-add_button = tk.Button(
-    input_frame,
-    text="Add Transaction",
-    command=add_transaction
-)
-
-add_button.grid(row=6, column=0, columnspan=2, pady=10)
-
-# Search Frame
-search_frame = tk.Frame(root)
-search_frame.pack(pady=10)
-
-tk.Label(search_frame, text="Search").grid(row=0, column=0, padx=5)
-
-search_entry = tk.Entry(search_frame, width=30)
-
-search_entry.grid(row=0, column=1, padx=5)
-
-search_entry.bind(
-    "<KeyRelease>",
-    debounce_search
-)
-
-# Filter
-tk.Label(search_frame, text="Type").grid(row=0, column=2, padx=5)
-
-filter_combobox = ttk.Combobox(
-    search_frame,
-    values=["All", "Income", "Expense"],
-    state="readonly",
-    width=15
-)
-
-filter_combobox.grid(row=0, column=3,padx=5)
-filter_combobox.current(0)
-
-filter_combobox.bind(
-    "<<ComboboxSelected>>",
-    lambda event: apply_filter()
-)
-
-# Reset Filter Button
-reset_button = tk.Button(
-    search_frame,
-    text="Reset Filter",
-    command=reset_filter
-)
-
-reset_button.grid(row=0, column=4, padx=5)
-
-# Action Frame
-action_frame = tk.Frame(root)
-
-action_frame.pack(pady=10)
-
-# Edit Transaction Button
-edit_button = tk.Button(
-    action_frame,
-    text="Edit Selected Transaction",
-    command=edit_transaction
-)
-
-edit_button.grid(row=0, column=0, padx=5, pady=5)
-
-# Save Changes Button
-save_button = tk.Button(
-    action_frame,
-    text="Save Changes",
-    command=save_changes
-)
-
-save_button.grid(row=0, column=1, padx=5, pady=5)
-
-# Delete Transaction(s) Button
-delete_button = tk.Button(
-    action_frame,
-    text="Delete Selected Transaction(s)",
-    command=delete_transaction
-)
-
-delete_button.grid(row=0, column=2, padx=5, pady=5)
-
-# Undo Delete Button
-undo_delete_button = tk.Button(
-    action_frame,
-    text="Undo Delete",
-    command=undo_delete,
-    state="disabled"
-)
-
-undo_delete_button.grid(row=0, column=3, padx=5, pady=5)
-
-# Monthly Expense Breakdown Button
-chart_button = tk.Button(
-    action_frame,
-    text="Monthly Expense Breakdown",
-    command=lambda: open_month_selector(
-        root,
-        "Show Expense Breakdown",
-        generate_expense_breakdown
-    )
-)
-
-chart_button.grid(row=1, column=0, padx=5, pady=5)
-
-# Monthly Category-Wise Spending Report 
-category_report_button = tk.Button(
-    action_frame,
-    text="Monthly Category Report",
-    command=lambda: open_month_selector(
-        root,
-        "Show Report",
-        lambda selector, month, year:
-            generate_category_report(
-                root,
-                selector,
-                month,
-                year
-            )
-    )
-)
-
-category_report_button.grid(row=2, column=0, padx=5, pady=5)
-
-# Monthly Summary Button
-monthly_summary_button = tk.Button(
-    action_frame,
-    text="Monthly Summary",
-    command=lambda: open_month_selector(
-        root,
+    open_month_selector(
+        app_state.root,
         "Show Summary",
-        lambda selector, month, year:
-            generate_monthly_summary(
-                root,
-                selector,
-                month,
-                year
-            )
+        open_monthly_summary
     )
-)
 
-monthly_summary_button.grid(row=2, column=1, padx=5, pady=5)
 
-# Monhly Category Budget Status Button
-category_budget_status_button = tk.Button(
-    action_frame,
-    text="Monthly Category Budget Status",
-    command=lambda: open_month_selector(
-        root,
+def open_monthly_summary(selector, month, year):
+
+    generate_monthly_summary(
+        app_state.root,
+        selector,
+        month,
+        year
+    )
+
+
+def open_category_report_selector():
+
+    open_month_selector(
+        app_state.root,
+        "Generate Report",
+        open_category_report
+    )
+
+
+def open_category_report(selector, month, year):
+
+    generate_category_report(
+        app_state.root,
+        selector,
+        month,
+        year
+    )
+
+
+def open_category_budget_status_selector():
+
+    open_month_selector(
+        app_state.root,
         "Show Status",
-        lambda selector, month, year:
-            generate_category_budget_status(
-                root,
-                selector,
-                month,
-                year
-            )
+        open_category_budget_status
     )
-)
 
-category_budget_status_button.grid(row=2, column=2, padx=5, pady=5)
 
-# Monthly Expense Trend Button
-trend_button = tk.Button(
-    action_frame,
-    text="Monthly Trend",
-    command=show_monthly_trend
-)
+def open_category_budget_status(selector, month, year):
 
-trend_button.grid(row=1, column=1, padx=5, pady=5)
+    generate_category_budget_status(
+        app_state.root,
+        selector,
+        month,
+        year
+    )
 
-# Export button
-export_button = tk.Button(
-    action_frame,
-    text="Export Financial Report",
-    command=lambda: export_report(root)
-)
 
-export_button.grid(row=1, column=2, padx=5, pady=5)
+# ========================================
+# GUI Creation
+# ========================================
 
-# Table Frame
-table_frame = tk.Frame(root)
+def create_gui():
 
-table_frame.pack(fill="both", expand=True, padx=20, pady=20)
+    app_state.root = tk.Tk()
+    app_state.root.title("Personal Finance Dashboard")
+    app_state.root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
+    app_state.root.resizable(True, True)
 
-# Transaction Table
-columns = ("ID", "Date", "Type", "Category", "Amount", "Description")
+    #--------------------------------------------------
+    # Title
+    #--------------------------------------------------
+    title_label = tk.Label(
+        app_state.root,
+        text="Personal Finance Dashboard",
+        font=TITLE_FONT
+    )
+    title_label.pack(pady=10)
 
-tree = ttk.Treeview(
-    table_frame,
-    columns=columns,
-    show="headings",
-    selectmode="extended"
-)
+    #--------------------------------------------------
+    # Summary Frame
+    #--------------------------------------------------
+    summary_frame = tk.Frame(app_state.root)
 
-for column in columns:
+    summary_frame.pack(pady=10)
 
-    if column in ("Date", "Amount", "Category"):
+    app_state.income_label = tk.Label(
+        summary_frame,
+        text="Total Income: ₹0.00",
+        font=LABEL_FONT
+    )
+    app_state.income_label.grid(row=0, column=0, padx=20)
 
-        tree.heading(
-            column,
-            text=column,
-            command=lambda c=column: sort_treeview(c)
+    app_state.expense_label = tk.Label(
+        summary_frame,
+        text="Total Expenses: ₹0.00",
+        font=LABEL_FONT
+    )
+    app_state.expense_label.grid(row=0, column=1, padx=20)
+
+    app_state.balance_label = tk.Label(
+        summary_frame,
+        text="Current Balance: ₹0.00",
+        font=LABEL_FONT
+    )
+    app_state.balance_label.grid(row=0, column=2, padx=20)
+
+    app_state.budget_label = tk.Label(
+        summary_frame,
+        text="Monthly Budget: ₹0.00",
+        font=LABEL_FONT
+    )
+    app_state.budget_label.grid(row=1, column=0, padx=20)
+
+    app_state.status_label = tk.Label(
+        summary_frame,
+        text="Budget Status: Not Set",
+        font=LABEL_FONT
+    )
+    app_state.status_label.grid(row=1, column=2, padx=20)
+
+    #--------------------------------------------------
+    # Budget Frame
+    #--------------------------------------------------
+    budget_frame = tk.Frame(app_state.root)
+
+    budget_frame.pack(pady=5)
+
+    tk.Label(budget_frame, text="Monthly Budget").grid(row=0, column=0, padx=5)
+
+    budget_entry = tk.Entry(budget_frame, width=20)
+    budget_entry.grid(row=0, column=1, padx=5)
+
+    saved_budget = load_budget()
+
+    if saved_budget > 0:
+        budget_entry.insert(0, str(saved_budget))
+
+    #--------------------------------------------------
+    # Set Budget Button
+    #--------------------------------------------------
+    budget_button = tk.Button(
+        budget_frame,
+        text="Set Budget",
+        command=lambda: save_budget(budget_entry)
+    )
+    budget_button.grid(row=0, column=2, padx=5)
+
+    #--------------------------------------------------
+    # Reset Budget Button
+    #--------------------------------------------------
+    reset_budget_button = tk.Button(
+        budget_frame,
+        text="Reset Budget",
+        command=lambda: reset_budget(budget_entry)
+    )
+    reset_budget_button.grid(row=0, column=3, padx=5)
+
+    #--------------------------------------------------
+    # Category Budgets Button
+    #--------------------------------------------------
+    category_budget_button = tk.Button(
+        budget_frame,
+        text="Category Budgets",
+        command=lambda: open_category_budget_window(app_state.root)
+    )
+    category_budget_button.grid(row=0, column=4, padx=5)
+
+    #--------------------------------------------------
+    # Input Frame
+    #--------------------------------------------------
+    input_frame = tk.Frame(app_state.root)
+    input_frame.pack(pady=10)
+
+    #--------------------------------------------------
+    # Date
+    #--------------------------------------------------
+    tk.Label(input_frame, text="Date").grid(row=0, column=0, padx=5, pady=5)
+
+    app_state.date_entry = DateEntry(
+        input_frame,
+        width=20,
+        date_pattern="yyyy-mm-dd"
+    )
+    app_state.date_entry.grid(row=0, column=1, padx=5, pady=5)
+
+    #--------------------------------------------------
+    # Type
+    #--------------------------------------------------
+    tk.Label(input_frame, text="Type").grid(row=1, column=0, padx=5, pady=5)
+
+    app_state.type_combobox = ttk.Combobox(
+        input_frame,
+        values=["Expense", "Income"],
+        state="readonly",
+        width=20
+    )
+    app_state.type_combobox.grid(row=1, column=1, padx=5, pady=5)
+    app_state.type_combobox.current(0)
+
+    #--------------------------------------------------
+    # Category
+    #--------------------------------------------------
+    tk.Label(input_frame, text="Category").grid(row=2, column=0, padx=5, pady=5)
+
+    app_state.category_combobox = ttk.Combobox(
+        input_frame,
+        values=CATEGORIES,
+        state="readonly",
+        width=20
+    )
+    app_state.category_combobox.grid(row=2, column=1, padx=5, pady=5)
+    app_state.category_combobox.current(0)
+
+    #--------------------------------------------------
+    #Custom category
+    #--------------------------------------------------
+    app_state.custom_category_label = tk.Label(input_frame, text="Custom Category")
+    app_state.custom_category_entry = tk.Entry(input_frame, width=23)
+
+    app_state.custom_category_label.grid(row=5, column=0, padx=5, pady=5)
+    app_state.custom_category_entry.grid(row=5, column=1, padx=5, pady=5)
+
+    app_state.custom_category_label.grid_remove()
+    app_state.custom_category_entry.grid_remove()
+
+    #--------------------------------------------------
+    # Amount
+    #--------------------------------------------------
+    tk.Label(input_frame, text="Amount").grid(row=3, column=0, padx=5, pady=5)
+
+    app_state.amount_entry = tk.Entry(input_frame, width=23)
+    app_state.amount_entry.grid(row=3, column=1, padx=5, pady=5)
+
+    #--------------------------------------------------
+    # Description
+    #--------------------------------------------------
+    tk.Label(input_frame, text="Description").grid(row=4, column=0, padx=5, pady=5)
+
+    app_state.description_entry = tk.Entry(input_frame, width=23)
+    app_state.description_entry.grid(row=4, column=1, padx=5, pady=5)
+
+    app_state.category_combobox.bind(
+        "<<ComboboxSelected>>",
+        handle_category_change
+    )
+
+    #--------------------------------------------------
+    # Add Transaction Button
+    #--------------------------------------------------
+    add_button = tk.Button(
+        input_frame,
+        text="Add Transaction",
+        command=add_transaction
+    )
+    add_button.grid(row=6, column=0, columnspan=2, pady=10)
+
+    #--------------------------------------------------
+    # Search Frame
+    #--------------------------------------------------
+    search_frame = tk.Frame(app_state.root)
+    search_frame.pack(pady=10)
+
+    tk.Label(search_frame, text="Search").grid(row=0, column=0, padx=5)
+
+    app_state.search_entry = tk.Entry(search_frame, width=30)
+    app_state.search_entry.grid(row=0, column=1, padx=5)
+
+    app_state.search_entry.bind(
+        "<KeyRelease>",
+        debounce_search
+    )
+
+    #--------------------------------------------------
+    # Filter
+    #--------------------------------------------------
+    tk.Label(search_frame, text="Type").grid(row=0, column=2, padx=5)
+
+    app_state.filter_combobox = ttk.Combobox(
+        search_frame,
+        values=["All", "Income", "Expense"],
+        state="readonly",
+        width=15
+    )
+
+    app_state.filter_combobox.grid(row=0, column=3,padx=5)
+    app_state.filter_combobox.current(0)
+
+    app_state.filter_combobox.bind(
+        "<<ComboboxSelected>>",
+        lambda event: apply_filter()
+    )
+
+    #--------------------------------------------------
+    # Reset Filter Button
+    #--------------------------------------------------
+    reset_button = tk.Button(
+        search_frame,
+        text="Reset Filter",
+        command=reset_filter
+    )
+    reset_button.grid(row=0, column=4, padx=5)
+
+    #--------------------------------------------------
+    # Action Frame
+    #--------------------------------------------------
+    action_frame = tk.Frame(app_state.root)
+
+    action_frame.pack(pady=10)
+
+    #--------------------------------------------------
+    # Edit Transaction Button
+    #--------------------------------------------------
+    edit_button = tk.Button(
+        action_frame,
+        text="Edit Selected Transaction",
+        command=edit_transaction
+    )
+    edit_button.grid(row=0, column=0, padx=5, pady=5)
+
+    #--------------------------------------------------
+    # Save Changes Button
+    #--------------------------------------------------
+    save_button = tk.Button(
+        action_frame,
+        text="Save Changes",
+        command=save_changes
+    )
+    save_button.grid(row=0, column=1, padx=5, pady=5)
+
+    #--------------------------------------------------
+    # Delete Transaction(s) Button
+    #--------------------------------------------------
+    delete_button = tk.Button(
+        action_frame,
+        text="Delete Selected Transaction(s)",
+        command=delete_transaction
+    )
+    delete_button.grid(row=0, column=2, padx=5, pady=5)
+
+    #--------------------------------------------------
+    # Undo Delete Button
+    #--------------------------------------------------
+    app_state.undo_delete_button = tk.Button(
+        action_frame,
+        text="Undo Delete",
+        command=undo_delete,
+        state="disabled"
+    )
+    app_state.undo_delete_button.grid(row=0, column=3, padx=5, pady=5)
+
+    #--------------------------------------------------
+    # Monthly Expense Breakdown Button
+    #--------------------------------------------------
+    chart_button = tk.Button(
+        action_frame,
+        text="Monthly Expense Breakdown",
+        command=lambda: open_month_selector(
+            app_state.root,
+            "Show Expense Breakdown",
+            generate_expense_breakdown
         )
+    )
+    chart_button.grid(row=1, column=0, padx=5, pady=5)
 
-    else:
+    #--------------------------------------------------
+    # Monthly Category-Wise Spending Report Button
+    #--------------------------------------------------
+    category_report_button = tk.Button(
+        action_frame,
+        text="Monthly Category Report",
+        command=open_category_report_selector
+    )
+    category_report_button.grid(row=2, column=0, padx=5, pady=5)
 
-        tree.heading(
-            column,
-            text=column
-        )
+    #--------------------------------------------------
+    # Monthly Summary Button
+    #--------------------------------------------------
+    monthly_summary_button = tk.Button(
+        action_frame,
+        text="Monthly Summary",
+        command=open_summary_selector
+    )
+    monthly_summary_button.grid(row=2, column=1, padx=5, pady=5)
 
-    if column == "ID":
+    #--------------------------------------------------
+    # Monhly Category Budget Status Button
+    #--------------------------------------------------
+    category_budget_status_button = tk.Button(
+        action_frame,
+        text="Monthly Category Budget Status",
+        command=open_category_budget_status_selector
+    )
+    category_budget_status_button.grid(row=2, column=2, padx=5, pady=5)
 
-        tree.column(column, width=0, stretch=False)
+    #--------------------------------------------------
+    # Monthly Expense Trend Button
+    #--------------------------------------------------
+    trend_button = tk.Button(
+        action_frame,
+        text="Monthly Trend",
+        command=show_monthly_trend
+    )
+    trend_button.grid(row=1, column=1, padx=5, pady=5)
 
-    elif column == "Description":
+    #--------------------------------------------------
+    # Export button
+    #--------------------------------------------------
+    export_button = tk.Button(
+        action_frame,
+        text="Export Financial Report",
+        command=lambda: export_report(app_state.root)
+    )
+    export_button.grid(row=1, column=2, padx=5, pady=5)
 
-        tree.column(column, width=350, minwidth=250, anchor="w", stretch=True)
+    #--------------------------------------------------
+    # Table Frame
+    #--------------------------------------------------
+    table_frame = tk.Frame(app_state.root)
 
-    elif column == "Category":
+    table_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
-        tree.column(column, width=180, minwidth=140, anchor="center", stretch=True)
+    #--------------------------------------------------
+    # Transaction Table
+    #--------------------------------------------------
+    app_state.tree = ttk.Treeview(
+        table_frame,
+        columns=COLUMNS,
+        show="headings",
+        selectmode="extended"
+    )
 
-    elif column == "Amount":
+    for column in COLUMNS:
 
-        tree.column(column, width=120, minwidth=100, anchor="e", stretch=False)
+        app_state.tree.heading(column, text=column)
 
-    else:
+        if column == "ID":
 
-        tree.column(column, width=140, minwidth=100, anchor="center", stretch=True)
+            app_state.tree.column(column, width=0, stretch=False)
 
-update_sort_headers()
+        elif column == "Description":
 
-tree.tag_configure(
-    "evenrow",
-    background=EVEN_ROW_COLOR
-)
+            app_state.tree.column(column, width=350, minwidth=250, anchor="w", stretch=True)
 
-tree.tag_configure(
-    "oddrow",
-    background=ODD_ROW_COLOR
-)
+        elif column == "Category":
 
-# Vertical Scrollbar
-scrollbar_y = ttk.Scrollbar(
-    table_frame,
-    orient="vertical",
-    command=tree.yview
-)
+            app_state.tree.column(column, width=180, minwidth=140, anchor="center", stretch=True)
 
-tree.configure(yscrollcommand=scrollbar_y.set)
+        elif column == "Amount":
 
-enable_mousewheel_scrolling(tree)
+            app_state.tree.column(column, width=120, minwidth=100, anchor="e", stretch=False)
 
-# Horizontal Scrollbar
-scrollbar_x = ttk.Scrollbar(
-    table_frame,
-    orient="horizontal",
-    command=tree.xview
-)
+        else:
 
-tree.configure(xscrollcommand=scrollbar_x.set)
+            app_state.tree.column(column, width=140, minwidth=100, anchor="center", stretch=True)
 
-# Pack Widgets
-scrollbar_y.pack(side="right", fill="y")
+    update_sort_headers()
 
-scrollbar_x.pack(side="bottom", fill="x")
+    app_state.tree.tag_configure(
+        "evenrow",
+        background=EVEN_ROW_COLOR
+    )
 
-tree.pack(side="left", fill="both", expand=True)
+    app_state.tree.tag_configure(
+        "oddrow",
+        background=ODD_ROW_COLOR
+    )
+
+    #--------------------------------------------------
+    # Vertical Scrollbar
+    #--------------------------------------------------
+    scrollbar_y = ttk.Scrollbar(
+        table_frame,
+        orient="vertical",
+        command=app_state.tree.yview
+    )
+
+    app_state.tree.configure(yscrollcommand=scrollbar_y.set)
+
+    enable_mousewheel_scrolling(app_state.tree)
+
+    #--------------------------------------------------
+    # Horizontal Scrollbar
+    #--------------------------------------------------
+    scrollbar_x = ttk.Scrollbar(
+        table_frame,
+        orient="horizontal",
+        command=app_state.tree.xview
+    )
+
+    app_state.tree.configure(xscrollcommand=scrollbar_x.set)
+
+    #--------------------------------------------------
+    # Pack Widgets
+    #--------------------------------------------------
+    scrollbar_y.pack(side="right", fill="y")
+
+    scrollbar_x.pack(side="bottom", fill="x")
+
+    app_state.tree.pack(side="left", fill="both", expand=True)
 
 
 
-load_transactions()
+    load_transactions()
 
-update_summary()
+    update_summary()
 
-root.bind("<Return>", shortcut_add)
+    app_state.root.bind("<Return>", shortcut_add)
 
-root.bind("<Control-s>", shortcut_save)
+    app_state.root.bind("<Control-s>", shortcut_save)
 
-root.bind("<Delete>", shortcut_delete)
+    app_state.root.bind("<Delete>", shortcut_delete)
 
-root.bind("<Control-z>", shortcut_undo)
+    app_state.root.bind("<Control-z>", shortcut_undo)
 
-root.bind("<Control-e>", shortcut_edit)
+    app_state.root.bind("<Control-e>", shortcut_edit)
 
-root.bind("<Control-f>", shortcut_search)
+    app_state.root.bind("<Control-f>", shortcut_search)
 
-root.bind("<Escape>", shortcut_clear)
+    app_state.root.bind("<Escape>", shortcut_clear)
 
-root.mainloop()
+    app_state.root.mainloop()

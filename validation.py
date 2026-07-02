@@ -2,8 +2,19 @@ import re
 from tkinter import messagebox
 from datetime import datetime
 
-from constants import *
-from storage import load_budget, load_category_budgets
+from constants import (
+    MIN_AMOUNT,
+    MAX_AMOUNT,
+    MAX_DESCRIPTION_LENGTH,
+    MAX_CATEGORY_LENGTH,
+    CUSTOM_CATEGORY,
+)
+
+from storage import (
+    load_budget, 
+    load_category_budgets
+)
+
 from finance import get_monthly_transactions
 
 
@@ -70,7 +81,7 @@ def get_category(category_combobox, custom_category_entry):
 
     category = category_combobox.get()
 
-    if category != CATEGORIES[-1]:  # Not "Custom"
+    if category != CUSTOM_CATEGORY:
 
         return category
 
@@ -88,7 +99,7 @@ def get_category(category_combobox, custom_category_entry):
 
         messagebox.showerror(
             "Error",
-            "Category name cannot exceed 30 characters."
+            f"Category name cannot exceed {MAX_CATEGORY_LENGTH} characters."
         )
         return None
 
@@ -111,7 +122,7 @@ def get_category(category_combobox, custom_category_entry):
     return category.title()
 
 
-def is_budget_exceeded(transaction_type, amount):
+def is_budget_exceeded(transaction_type, amount, selected_month=None):
 
     if transaction_type != "Expense":
 
@@ -122,12 +133,14 @@ def is_budget_exceeded(transaction_type, amount):
     if budget == 0:
 
         return False
+    
+    if selected_month is None:
 
-    current_month = datetime.now().strftime("%Y-%m")
+        selected_month = datetime.now().strftime("%Y-%m")
 
     monthly_expenses = 0
 
-    transactions = get_monthly_transactions(current_month)
+    transactions = get_monthly_transactions(selected_month)
 
     for row in transactions:
 
@@ -138,7 +151,7 @@ def is_budget_exceeded(transaction_type, amount):
     return monthly_expenses + amount > budget
 
 
-def is_category_budget_exceeded(transaction_type, category, amount):
+def is_category_budget_exceeded(transaction_type, category, amount, selected_month=None):
 
     if transaction_type != "Expense":
 
@@ -149,14 +162,16 @@ def is_category_budget_exceeded(transaction_type, category, amount):
     if category not in category_budgets:
 
         return False
+    
+    if selected_month is None:
+
+        selected_month = datetime.now().strftime("%Y-%m")
 
     budget = category_budgets[category]
 
-    current_month = datetime.now().strftime("%Y-%m")
-
     category_spent = 0
 
-    transactions = get_monthly_transactions(current_month)
+    transactions = get_monthly_transactions(selected_month)
 
     for row in transactions:
 

@@ -2,9 +2,47 @@ import tkinter as tk
 from tkinter import messagebox
 from datetime import datetime
 
-from constants import *
-from finance import calculate_monthly_summary, calculate_category_totals, calculate_category_budget_status
+from constants import (
+    REPORT_FONT,
+    REPORT_WIDTH,
+    REPORT_HEIGHT
+)
+
+from dialogs import get_selected_month
+
+from finance import (
+    calculate_monthly_summary, 
+    calculate_category_totals, 
+    calculate_category_budget_status
+)
+
 from ui_helpers import enable_mousewheel_scrolling
+
+
+
+def create_report_text_window(root, title, wrap="word"):
+
+    report_window = tk.Toplevel(root)
+
+    report_window.title(title)
+
+    report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
+
+    report_window.resizable(False, False)
+
+    scrollbar = tk.Scrollbar(report_window)
+
+    scrollbar.pack(side="right", fill="y")
+
+    text = tk.Text(report_window, wrap=wrap, font=REPORT_FONT, yscrollcommand=scrollbar.set)
+
+    text.pack(fill="both", expand=True, padx=10, pady=10)
+
+    scrollbar.config(command=text.yview)
+
+    enable_mousewheel_scrolling(text)
+
+    return text
 
 
 
@@ -22,27 +60,9 @@ def show_monthly_summary(root, selected_month):
     budget = summary["budget"]
     remaining_budget = summary["remaining_budget"]
 
+    text = create_report_text_window(root, "Monthly Summary")
+
     display_month = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
-
-    report_window = tk.Toplevel(root)
-
-    report_window.title("Monthly Summary")
-
-    report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
-
-    report_window.resizable(False, False)
-
-    scrollbar = tk.Scrollbar(report_window)
-
-    scrollbar.pack(side="right", fill="y")
-
-    text = tk.Text(report_window, font=REPORT_FONT, yscrollcommand=scrollbar.set)
-
-    text.pack(fill="both", expand=True, padx=10, pady=10)
-
-    scrollbar.config(command=text.yview)
-
-    enable_mousewheel_scrolling(text)
 
     report = ""
 
@@ -84,20 +104,18 @@ def show_monthly_summary(root, selected_month):
             f"₹{abs(remaining_budget):,.2f} Exceeded\n"
         )
 
-    text.insert("1.0", report)
+    text.insert(tk.END, report)
 
     text.config(state="disabled")
 
 
 def generate_monthly_summary(root, selector, month_name, year):
 
-    month_number = datetime.strptime(month_name, "%B").month
-
-    selected_month = f"{year}-{month_number:02d}"
+    selected_month = get_selected_month(month_name, year)
 
     selector.destroy()
 
-    show_monthly_summary(root,selected_month)
+    show_monthly_summary(root, selected_month)
 
 
 def show_monthly_category_report(root, selected_month): 
@@ -114,25 +132,7 @@ def show_monthly_category_report(root, selected_month):
     
     display_month = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
 
-    report_window = tk.Toplevel(root)
-
-    report_window.title("Category-Wise Spending Report")
-
-    report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
-
-    report_window.resizable(False, False)
-
-    scrollbar = tk.Scrollbar(report_window)
-
-    scrollbar.pack(side="right", fill="y")
-
-    text = tk.Text(report_window, font=REPORT_FONT, yscrollcommand=scrollbar.set)
-
-    text.pack(fill="both", expand=True, padx=10, pady=10)
-
-    scrollbar.config(command=text.yview)
-
-    enable_mousewheel_scrolling(text)
+    text = create_report_text_window(root, "Category-Wise Spending Report")
 
     report = f"Category Report ({display_month})\n"
 
@@ -160,16 +160,14 @@ def show_monthly_category_report(root, selected_month):
         f"₹{total_expenses:,.2f}"
     )
 
-    text.insert("1.0", report)
+    text.insert(tk.END, report)
 
     text.config(state="disabled")
 
 
 def generate_category_report(root, selector, month_name, year):
 
-    month_number = datetime.strptime(month_name,"%B").month
-
-    selected_month = f"{year}-{month_number:02d}"
+    selected_month = get_selected_month(month_name, year)
 
     selector.destroy()
 
@@ -190,23 +188,7 @@ def show_monthly_category_budget_status(root, selected_month):
 
     display_month = datetime.strptime(selected_month, "%Y-%m").strftime("%B %Y")
 
-    report_window = tk.Toplevel(root)
-
-    report_window.title(f"Category Budget Status ({display_month})")
-
-    report_window.geometry(f"{REPORT_WIDTH}x{REPORT_HEIGHT}")
-
-    scrollbar = tk.Scrollbar(report_window)
-
-    scrollbar.pack(side="right", fill="y")
-
-    text = tk.Text(report_window, wrap="none", font=REPORT_FONT, yscrollcommand=scrollbar.set)
-
-    text.pack(fill="both", expand=True, padx=10, pady=10)
-
-    scrollbar.config(command=text.yview)
-
-    enable_mousewheel_scrolling(text)
+    text = create_report_text_window(root, f"Category Budget Status ({display_month})", wrap="none")
 
     report = f"Category Budget Status ({display_month})\n"
 
@@ -275,9 +257,7 @@ def show_monthly_category_budget_status(root, selected_month):
 
 def generate_category_budget_status(root, selector, month_name, year):
 
-    month_number = datetime.strptime(month_name, "%B").month
-
-    selected_month = f"{year}-{month_number:02d}"
+    selected_month = get_selected_month(month_name, year)
 
     selector.destroy()
 

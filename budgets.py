@@ -2,17 +2,34 @@ import os
 import tkinter as tk
 from tkinter import messagebox
 
-from constants import *
-from storage import write_budget, load_category_budgets, save_category_budgets, get_all_categories
-from validation import is_budget_exceeded, is_category_budget_exceeded, validate_numeric_amount
-from gui import update_summary
+from constants import (
+    BUDGET_FILE,
+    BUDGET_WIDTH,
+    BUDGET_HEIGHT
+)
+
+from storage import (
+    write_budget, 
+    load_category_budgets, 
+    save_category_budgets, 
+    get_all_categories
+)
+
+from validation import (
+    is_budget_exceeded, 
+    is_category_budget_exceeded, 
+    validate_numeric_amount
+)
+
+from gui_actions import update_summary
+
 from ui_helpers import enable_mousewheel_scrolling
 
 
 
-def check_budget_warning(transaction_type, amount):
+def check_budget_warning(transaction_type, amount, selected_month=None):
 
-    if not is_budget_exceeded(transaction_type, amount):
+    if not is_budget_exceeded(transaction_type, amount, selected_month):
 
         return True
 
@@ -23,13 +40,9 @@ def check_budget_warning(transaction_type, amount):
     )
 
 
-def check_category_budget_warning(transaction_type, category, amount):
+def check_category_budget_warning(transaction_type, category, amount, selected_month=None):
 
-    if not is_category_budget_exceeded(
-        transaction_type,
-        category,
-        amount
-    ):
+    if not is_category_budget_exceeded(transaction_type, category, amount, selected_month):
 
         return True
 
@@ -153,7 +166,7 @@ def open_category_budget_window(root):
 
         if category in saved_budgets:
 
-            entry.insert(0, str(saved_budgets[category]))
+            entry.insert(0, saved_budgets[category])
 
         category_entries[category] = entry
 

@@ -2,7 +2,12 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from tkinter import messagebox
 
-from finance import calculate_monthly_trend, calculate_expense_breakdown
+from dialogs import get_selected_month
+
+from finance import (
+    calculate_monthly_trend, 
+    calculate_expense_breakdown
+)
 
 
 
@@ -28,7 +33,8 @@ def show_monthly_trend():
     plt.plot(
         display_months,
         expenses,
-        marker="o"
+        marker="o",
+        linewidth=2
     )
 
     plt.title("Monthly Expense Trend")
@@ -39,6 +45,7 @@ def show_monthly_trend():
 
     plt.show()
 
+    plt.close()
 
 
 def show_monthly_expense_breakdown(selected_month):
@@ -80,17 +87,18 @@ def show_monthly_expense_breakdown(selected_month):
         f"Total Expenses: ₹{total_expense:,.2f}"  
     )
 
+    plt.axis("equal")
+
     plt.tight_layout()
 
     plt.show()
 
+    plt.close()
 
 
 def generate_expense_breakdown(selector, month_name, year):
 
-    month_number = datetime.strptime(month_name, "%B").month
-
-    selected_month = f"{year}-{month_number:02d}"
+    selected_month = get_selected_month(month_name, year)
 
     selector.destroy()
 

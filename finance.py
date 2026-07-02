@@ -1,7 +1,13 @@
 from datetime import datetime
 
-from constants import *
-from storage import read_transactions, get_all_categories, load_budget, load_category_budgets
+from constants import MIN_PIE_PERCENTAGE
+
+from storage import (
+    read_transactions, 
+    get_all_categories, 
+    load_budget, 
+    load_category_budgets
+)
 
 
 
@@ -39,7 +45,7 @@ def calculate_dashboard_summary():
 
             monthly_income += amount
 
-        else:
+        elif row["Type"] == "Expense":
 
             monthly_expenses += amount
 
@@ -81,7 +87,7 @@ def calculate_monthly_summary(selected_month):
             monthly_income += amount
             income_count += 1
 
-        else:
+        elif row["Type"] == "Expense":
 
             monthly_expenses += amount
             expense_count += 1
@@ -185,7 +191,7 @@ def calculate_monthly_trend():
 
             continue
 
-        month = row["Date"][:7]      # YYYY-MM
+        month = row["Date"][:7]     # YYYY-MM
 
         amount = float(row["Amount"])
 

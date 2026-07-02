@@ -4,9 +4,15 @@ CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Education", "Healthcare", 
 
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
+COLUMNS = ("ID", "Date", "Type", "Category", "Amount", "Description")
+
+SORTABLE_COLUMNS = ("Date", "Amount", "Category")
+
 EXPORT_FORMATS = ["CSV", "PDF", "Excel"]
 
-CSV_HEADERS = ["ID", "Date", "Type", "Category", "Amount", "Description"]
+CSV_HEADERS = list(COLUMNS)
+
+CUSTOM_CATEGORY = "Other"
 
 CSV_FILE = os.path.join(os.path.dirname(__file__), "transactions.csv")
 
@@ -23,7 +29,7 @@ MAX_CATEGORY_LENGTH = 30
 
 MAX_DESCRIPTION_LENGTH = 50
 
-MIN_PIE_PERCENTAGE = 2
+MIN_PIE_PERCENTAGE = 2.0
 
 LABEL_FONT = ("Arial", 12, "bold")
 TITLE_FONT = ("Arial", 18, "bold")

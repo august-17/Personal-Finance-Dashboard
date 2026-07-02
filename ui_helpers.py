@@ -2,7 +2,9 @@ def enable_mousewheel_scrolling(widget):
 
     def _on_mousewheel(event):
 
-        widget.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        delta = -int(event.delta / 120)
+
+        widget.yview_scroll(delta, "units")
 
     widget.bind("<Enter>", lambda e: widget.bind_all("<MouseWheel>", _on_mousewheel))
 
@@ -16,3 +18,18 @@ def insert_row(tree, values):
     tag = "evenrow" if row_count % 2 == 0 else "oddrow"
 
     tree.insert("", "end", values=values, tags=(tag,))
+
+
+def insert_transaction_row(tree, transaction):
+
+    insert_row(
+        tree,
+        (
+            transaction["ID"],
+            transaction["Date"],
+            transaction["Type"],
+            transaction["Category"],
+            transaction["Amount"],
+            transaction["Description"]
+        )
+    )

@@ -4,8 +4,14 @@ import json
 import shutil
 from datetime import datetime
 
-from constants import *
-
+from constants import (
+    CSV_FILE, 
+    CSV_HEADERS, 
+    CATEGORIES, 
+    BUDGET_FILE, 
+    CATEGORY_BUDGET_FILE, 
+    BACKUP_FILE
+)
 
 
 def create_csv_file():
@@ -21,9 +27,15 @@ def create_csv_file():
 
 def create_backup():
 
-    if os.path.exists(CSV_FILE):
+    try:
 
-        shutil.copy(CSV_FILE, BACKUP_FILE)
+        if os.path.exists(CSV_FILE):
+
+            shutil.copy(CSV_FILE, BACKUP_FILE)
+
+    except OSError as e:
+
+        pass
 
 
 def read_transactions():
@@ -43,7 +55,13 @@ def get_next_id():
 
     for row in transactions:
 
-        current_id = int(row["ID"])
+        try:
+
+            current_id = int(row["ID"])
+
+        except ValueError:
+
+            continue
 
         if current_id > highest_id:
 
@@ -92,7 +110,7 @@ def load_budget():
 
             return float(file.read())
 
-    except ValueError:
+    except (ValueError, OSError):
 
         return 0
 
@@ -116,7 +134,7 @@ def load_category_budgets():
 
             return json.load(file)
 
-    except (FileNotFoundError, json.JSONDecodeError):
+    except (json.JSONDecodeError, OSError):
 
         return {}
 

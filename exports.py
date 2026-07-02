@@ -11,9 +11,14 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from constants import *
+from constants import CSV_HEADERS
+
 from finance import get_monthly_transactions
-from dialogs import open_month_selector, open_export_window
+
+from dialogs import (
+    open_month_selector, 
+    open_export_window
+)
 
 
 
@@ -23,17 +28,17 @@ def export_selected_format(format_combobox, export_window, selected_month):
 
     export_window.destroy()
 
-    if selected_format == "CSV":
+    export_functions = {
 
-        export_csv(selected_month)
+        "CSV": export_csv,
 
-    elif selected_format == "PDF":
+        "PDF": export_pdf,
 
-        export_pdf(selected_month)
+        "Excel": export_excel
 
-    else:
+    }
 
-        export_excel(selected_month)
+    export_functions[selected_format](selected_month)
 
 
 def export_report(root):
@@ -44,6 +49,22 @@ def export_report(root):
         lambda selector, month, year: 
             open_export_window(root, selector, month, year, export_selected_format)
     )
+
+
+def get_export_transactions(selected_month):
+
+    transactions = get_monthly_transactions(selected_month)
+
+    if not transactions:
+
+        messagebox.showinfo(
+            "No Data",
+            "No transactions available for the selected month."
+        )
+
+        return None
+
+    return transactions
 
 
 def export_csv(selected_month):
@@ -58,14 +79,10 @@ def export_csv(selected_month):
 
         return
     
-    transactions = get_monthly_transactions(selected_month)
+    transactions = get_export_transactions(selected_month)
 
-    if not transactions:
+    if transactions is None:
 
-        messagebox.showinfo(
-            "No Data",
-            "No transactions available for the selected month."
-        )
         return
 
     try:
@@ -112,14 +129,10 @@ def export_pdf(selected_month):
 
         return
     
-    transactions = get_monthly_transactions(selected_month)
+    transactions = get_export_transactions(selected_month)
 
-    if not transactions:
+    if transactions is None:
 
-        messagebox.showinfo(
-            "No Data",
-            "No transactions available for the selected month."
-        )
         return
     
     pdf = SimpleDocTemplate(file_path, pagesize=landscape(A4))
@@ -206,14 +219,10 @@ def export_excel(selected_month):
 
         return
     
-    transactions = get_monthly_transactions(selected_month)
+    transactions = get_export_transactions(selected_month)
 
-    if not transactions:
+    if transactions is None:
 
-        messagebox.showinfo(
-            "No Data",
-            "No transactions available for the selected month."
-        )
         return
 
     try:

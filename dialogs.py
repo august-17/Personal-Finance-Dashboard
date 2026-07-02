@@ -2,7 +2,15 @@ import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
 
-from constants import *
+from constants import (
+    MONTHS, 
+    EXPORT_FORMATS, 
+    SELECTOR_WIDTH, 
+    SELECTOR_HEIGHT, 
+    EXPORT_WIDTH, 
+    EXPORT_HEIGHT
+)
+
 from storage import get_available_years
 
 
@@ -54,6 +62,13 @@ def open_month_selector(root, button_text, callback):
             year_combobox.get()
         )
     ).pack(pady=15)
+
+
+def get_selected_month(month_name, year):
+
+    month_number = datetime.strptime(month_name, "%B").month
+
+    return f"{year}-{month_number:02d}"
 
 
 def open_export_window(root, selector, month, year, export_callback):
