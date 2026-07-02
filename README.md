@@ -272,4 +272,4 @@ The application stores all information locally.
 **August Kumar Sasmal**
 
 B.Tech Computer Science & Engineering
-Manipal Institute of Technology
+Manipal Institute of Technology, Manipal
